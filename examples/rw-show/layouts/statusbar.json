@@ -1,0 +1,39 @@
+{
+    "Type": "StatusBar",
+    "Name": "StatusBar1",
+    "TextSize": 20,
+    "Docking": {
+        "Side": "Bottom",
+        "Size": 25
+    },
+    "StatusBarItems": {
+        "ItemStatus": {
+            "Docking": {
+                "Side": "Left",
+                "Size": 200
+            },
+            "Text":"Status --",
+            "TextAlignH": "Center"
+        },
+        "ItemUser": {
+            "Left": 200,
+            "Width": 300,
+            "Text":"User --",
+            "TextAlignH": "Left"
+        },
+        "ItemServerVersion": {
+            "Left": 500,
+            "Width": 150,
+            "Text":"Server --",
+            "TextAlignH": "Right"
+        },
+        "ItemClientVersion": {
+            "Docking": {
+                "Side": "Right",
+                "Size": 150
+            },
+            "Text":"Client 0.0.0",
+            "TextAlignH": "Right"
+        }
+    }
+}

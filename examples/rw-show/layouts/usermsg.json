@@ -1,0 +1,13 @@
+{
+    "Type": "Label",
+    "Name": "LabelMessage",
+    "Text": "",
+    "TextSize": 20,
+    "TextAlignH": "Center",
+    "Bounds": {
+        "Left": 0,
+        "Top": 350,
+        "Width": 800,
+        "Height": 24
+    }
+}

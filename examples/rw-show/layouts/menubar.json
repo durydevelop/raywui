@@ -1,0 +1,63 @@
+{
+    "Type": "Container",
+    "Name": "MenuBar1",
+    "Bounds": {
+        "Left": 0,
+        "Top": 0,
+        "Width": 100,
+        "Height": 374
+    },
+    "Visible": false,
+    "ShowBorder": true,
+    "BorderWidth": 1,
+
+    "Children": [
+        {
+            "Type": "Label",
+            "Name": "LabelTitle",
+            "Text": "Menu",
+            "TextSize": 20,
+            "TextAlignH": "Center",
+            "Bounds": {
+                "Left": 0,
+                "Top": 0,
+                "Width": 100,
+                "Height": 24
+            }
+        },
+        {
+            "Type": "Button",
+            "Name":"ButtonFormMain",
+            "Text": "Controllo",
+            "TextSize": 20,
+            "Bounds": {
+                "Left": 0,
+                "Top": 24,
+                "Width": 100,
+                "Height": 48
+            }
+        },
+        {
+            "Type": "Button",
+            "Name": "ButtonFormDiag",
+            "Text": "Diag",
+            "TextSize": 20,
+            "Bounds": {
+                "Left": 0,
+                "Top": 276,
+                "Width": 100,
+                "Height": 48
+            }
+        },
+        {
+            "Type": "Button",
+            "Name": "ButtonFormLogin",
+            "Text": "Logout",
+            "TextSize": 20,
+            "Docking": {
+                "Side": "Bottom",
+                "Size": 48
+            }
+        }
+    ]
+}

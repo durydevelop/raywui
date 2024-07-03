@@ -1,0 +1,38 @@
+{
+    "Type": "Container",
+    "Name": "FormDiag",
+    "Bounds": {
+        "Left": 0,
+        "Top": 0,
+        "Width": 800,
+        "Height": 400
+    },
+
+    "Children": [
+        {
+            "Type": "Label",
+            "Name": "LabelTitle",
+            "Text": "Diagnostica",
+            "TextSize": 25,
+            "TextAlignH": "Center",
+            "Bounds": {
+                "Left": 0,
+                "Top": 0,
+                "Width": 800,
+                "Height": 24
+            }
+        },
+        {
+            "Type": "Button",
+            "Name": "ButtonDiagRead",
+            "Text": "Read",
+            "TextSize": 20,
+            "Bounds": {
+                "Left": 150,
+                "Top": 250,
+                "Width": 100,
+                "Height": 48
+            }
+        }
+    ]
+}

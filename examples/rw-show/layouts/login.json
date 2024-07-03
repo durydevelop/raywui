@@ -1,0 +1,101 @@
+{
+    "Type": "Container",
+    "Name": "FormLogin",
+    "Bounds": {
+        "Left": 0,
+        "Top": 0,
+        "Width": 800,
+        "Height": 400
+    },
+
+    "Children": [
+        {
+            "Type": "Label",
+            "Name": "LabelUser",
+            "Text": "User",
+            "TextSize": 20,
+            "Bounds": {
+                "Left": 200,
+                "Top": 24,
+                "Width": 400,
+                "Height": 24
+            }
+        },
+        {
+            "Type": "Edit",
+            "Name": "EditUser",
+            "Text": "",
+            "TextSize": 40,
+            "Bounds": {
+                "Left": 200,
+                "Top": 48,
+                "Width": 400,
+                "Height": 48
+            },
+            "ReadOnly": false,
+            "MaxTextLenght": 50
+        },
+        {
+            "Type": "Label",
+            "Name": "LabelPwd",
+            "Text": "Password",
+            "TextSize": 20,
+            "Bounds": {
+                "Left": 200,
+                "Top": 120,
+                "Width": 400,
+                "Height": 24
+            }
+        },
+        {
+            "Type": "Edit",
+            "Name": "EditPwd",
+            "Text": "",
+            "TextSize": 40,
+            "Bounds": {
+                "Left": 200,
+                "Top": 144,
+                "Width": 400,
+                "Height": 48
+            },
+            "PasswordMode": true
+        },
+        {
+            "Type": "Button",
+            "Name": "ButtonShowPwd",
+            "Text": "§",
+            "TextSize": 20,
+            "Bounds": {
+                "Left": 601,
+                "Top": 144,
+                "Width": 40,
+                "Height": 48
+            }
+        },
+        {
+            "Type": "Button",
+            "Name": "ButtonLogin",
+            "Text": "Login",
+            "TextSize": 20,
+            "Bounds": {
+                "Left": 200,
+                "Top": 216,
+                "Width": 198,
+                "Height": 48
+            }
+        },
+        {
+            "Type": "Button",
+            "Name": "ButtonLogout",
+            "Text": "Logout",
+            "TextSize": 20,
+            "Bounds": {
+                "Left": 402,
+                "Top": 216,
+                "Width": 198,
+                "Height": 48
+            },
+            "Enabled": false
+        }
+    ]
+}

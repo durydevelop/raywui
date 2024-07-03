@@ -1,0 +1,56 @@
+{
+    "Type": "Container",
+    "Name": "FormImage",
+    "Bounds": {
+        "Left": 0,
+        "Top": 0,
+        "Width": 800,
+        "Height": 400
+    },
+
+    "Children": [
+        {
+            "Type": "Label",
+            "Name": "LabelTitle",
+            "Text": "Image View",
+            "TextSize": 25,
+            "TextAlignH": "Center",
+            "Bounds": {
+                "Left": 0,
+                "Top": 0,
+                "Width": 800,
+                "Height": 24
+            }
+        },
+        {
+            "Type": "Image",
+            "Name": "Image1",
+            "Filename": "red1.png",
+            "Text": "",
+            "TextSize": 25,
+            "TextAlignH": "Center",
+            "Bounds": {
+                "Left": 100,
+                "Top": 100,
+                "Width": 200,
+                "Height": 200
+            }
+        },
+        {
+            "Type": "Image",
+            "Name": "Image2",
+            "Filename": "red1.png",
+            "Rotation": "90",
+            "Scale": "1.5",
+            "Text": "",
+            "TextSize": 25,
+            "TextAlignH": "Center",
+            "Bounds": {
+                "Left": 100,
+                "Top": 100,
+                "Width": 200,
+                "Height": 200
+            }
+        }
+    ]
+}
