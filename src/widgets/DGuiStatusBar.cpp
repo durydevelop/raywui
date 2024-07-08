@@ -160,7 +160,7 @@ void DGuiStatusBar::AddItem(std::string ItemName, int LeftPos, int Width, std::s
 
     DStatusBarItem Item(Rectangle{Bounds.x+LeftPos, Bounds.y, (float) Width, Bounds.height},this);
     if (!ItemText.empty()) {
-        Item.SetText(ItemText.c_str());
+        Item.SetText(ItemText.c_str(),false);
     }
     Item.Properties.TextSize=Properties.TextSize;
     Item.Properties.TextSpacing=Properties.TextSpacing;
@@ -179,7 +179,7 @@ DGuiStatusBar::DStatusBarItem* DGuiStatusBar::GetItem(std::string ItemName) {
 
 void DGuiStatusBar::SetItemText(std::string ItemName, std::string ItemText) {
     if (Items.contains(ItemName)) {
-        Items.at(ItemName).SetText(ItemText);
+        Items.at(ItemName).SetText(ItemText,false);
     }
 }
 

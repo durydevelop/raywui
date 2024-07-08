@@ -90,22 +90,7 @@ void DGuiToggleSlide::Draw()
             SendEvent(Event);
         }
         GuiSetStyle(SLIDER, SLIDER_PADDING, CurrPadding);
-
-        if (!Text.empty()) {
-            /// @todo stabilire cosa fare
-            Rectangle LabelBounds=Bounds;
-            int w=GetGuiTextWidth(Text.c_str());
-            LabelBounds.x-=w+10;
-            LabelBounds.width=w+10;
-            GuiLabel(LabelBounds,Text.c_str());
-        }
     }
-    /*
-    if (GuiButton(Bounds, Text.c_str())) {
-        DWidgetEvent Event={DEventCode::BUTTON_PRESS, nullptr};
-        SendEvent(Event);
-    }
-    */
 }
 
 /// @todo? Gui control property style color element from raygui (no other way nor now)
@@ -165,7 +150,7 @@ int DGuiToggleSlide::DrawToggleSlider(Rectangle bounds, int *active)
 
     // Draw text in slider
     Rectangle textBounds = { 0 };
-    textBounds.width = (float)GetGuiTextWidth(DTools::DVector::JoinToStr(Items,";").c_str());
+    textBounds.width = (float)GetTextWidth(DTools::DVector::JoinToStr(Items,";"),GuiGetFont(),Properties.TextSize);
     textBounds.height = (float)GuiGetStyle(DEFAULT, TEXT_SIZE);
     textBounds.x = slider.x + slider.width/2 - textBounds.width/2;
     textBounds.y = bounds.y + bounds.height/2 - GuiGetStyle(DEFAULT, TEXT_SIZE)/2;

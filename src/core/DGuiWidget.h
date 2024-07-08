@@ -6,6 +6,7 @@
 #include <map>
 #include <DGuiCommon.h>
 #include <dpplib/DPreferences.h>
+#include <dpplib/DFilesystem.h>
 
 struct DRglControl {
     DWidgetType WidgetType=DWidgetType::UNKNOWN;
@@ -41,6 +42,11 @@ class DGuiWidget
             inline static const std::string ITEM_TYPE="Type";
             inline static const std::string ITEM_TEXT="Text";
             inline static const std::string ITEM_TEXT_SIZE="TextSize";
+            inline static const std::string ITEM_TEXT_COLOR="TextColor";
+            inline static const std::string ITEM_TEXT_SPACING="TextSpacing";
+            inline static const std::string ITEM_BORDER_COLOR="BorderColor";
+            inline static const std::string ITEM_LINE_COLOR="LineColor";
+            inline static const std::string ITEM_BACKGROUND_COLOR="BackgroundColor";
             inline static const std::string ITEM_TEXT_ALIGN_H="TextAlignH";
             inline static const std::string ITEM_TEXT_ALIGN_V="TextAlignV";
             inline static const std::string ITEM_LEFT="Left";
@@ -50,6 +56,7 @@ class DGuiWidget
             inline static const std::string ITEM_DOCKING="Docking";
             inline static const std::string ITEM_SIDE="Side";
             inline static const std::string ITEM_SIZE="Size";
+            inline static const std::string ITEM_OFFSET="Offset";
             inline static const std::string ITEM_BOUNDS="Bounds";
             inline static const std::string ITEM_READ_ONLY="ReadOnly";
             inline static const std::string ITEM_PASSWORD_MODE="PasswordMode";
@@ -61,6 +68,7 @@ class DGuiWidget
             inline static const std::string ITEM_FILENAME="Filename";
             inline static const std::string ITEM_ROTATION="Rotation";
             inline static const std::string ITEM_SCALE="Scale";
+            inline static const std::string ITEM_LABEL="Label";
 
             inline static const std::string VALUE_BOTTOM="Bottom";
             inline static const std::string VALUE_TOP="Top";
@@ -81,25 +89,28 @@ class DGuiWidget
         // Gui control property style color element
 
         struct DProperties {
-            // Text (defaults are set in SetWidgetType())
+            // ** Apparecne **
+            /// Defaults are set in SetWidgetType()
+            /// @todo Font TextFont;
             unsigned int TextColor;
             int TextPadding;
             DTextAlign TextAlign;
             int TextSize;
             int TextSpacing;
-
-            // Colors (defaults are set in SetWidgetType())
-            int BorderWidth;
             unsigned int BorderColor;
             unsigned int LineColor;
             unsigned int BackGroundColor;
+            int BorderWidth;
+            bool BorderVisible; /// Used to override border visible in widgets that does not show it.
+            /// Deprecated std::string AnchorId;
 
-            // Dinamic behaviours (defaults are set here)
+            /// Defauts set here
+            DDocking LabelSide=DOCK_LEFT;
+            int LabelOffset=5;
+            // ** Behaviours **
             bool Enabled=true;
             bool Visible=true;
             bool ShowBorder=false;
-
-            //std::string AnchorId; // deprecated
         }Properties;
         
         DGuiWidget(DWidgetType WidgetType, int LeftPos, int TopPos, int WidgetWidth, int WidgetHeight, DGuiWidget *ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
@@ -113,23 +124,26 @@ class DGuiWidget
         /// Virtual method that MUST be implemented by sub-class
         virtual void Draw() = 0;
         
-        /// Virtual methods that can be reimplemented
-        virtual void SetText(std::string NewText);
+        /// Virtual methods that CAN be reimplemented
+        virtual void SetText(std::string NewText, bool Resize);
         virtual const std::string& GetText(void);
         virtual void SetOnGuiEvent(OnGuiEventCallback Callback);
 
         /// Static methods
-        static DTools::DTree ExtractDTree(const std::string& Filename);
+        static DTools::DTree ExtractDTree(const DTools::fs::path& Filename);
         static std::string RglToJson(std::string Filename);
         static DRglControl DecodeRglLine(std::string Line);
         static DWidgetType NameToType(const std::string& WidgetTypeName);
         static std::string TypeToName(DWidgetType WidgetType);
+        static DDocking NameToDocking(std::string SideName, DDocking Default);
+        static unsigned int ColorStringToInt(std::string ColorString);
+        static int GetTextWidth(std::string TextStr, Font TextFont, float FontSize);
 
         void Clear(void);
         void Draws(void);
 
         void SetWidgetType(DWidgetType WidgetType);
-        void SetTextSize(int NewSize);
+        void SetTextSize(int NewSize, bool Resize);
         void SetWidth(int Width);
         void SetHeight(int Height);
         void SetParent(DGuiWidget *Parent);
@@ -140,9 +154,16 @@ class DGuiWidget
         void SetSize(int Width, int Height);
         void SetDocking(DDocking DockingPos, int OtherSize);
         void SetDocking(std::string DockingSideName, int OtherSize);
+        void SetLabel(std::string LabelText, int FontSize, DDocking LabelSide, int LabelOffset);
+        void UpdateSize(void);
+        void UpdateLabel(void);
+/// @todo
+/// void SetDockingSide(DDocking DockingPos, int OtherSize);
+/// void SetDockingSide(std::string DockingSideName, int OtherSize);
         void SetBounds(int LeftPos, int TopPos, int Width, int Height);
         void SetBounds(Rectangle WidgetBounds);
         void SetBorderWidth(uint8_t NewWidth);
+        void SetBorderVisible(bool Visible);
         void SetEnabled(bool Enabled);
         void SetVisible(bool Visible);
 
@@ -161,7 +182,6 @@ class DGuiWidget
         int GetGuiTextBoxCursorIndex(void);
         void SetGuiTextBoxCursorIndex(int cursorIndex);
         bool IsGuiLocked(void);
-        int GetGuiTextWidth(const char *text);
         void RayGuiDrawRectangle(Rectangle rec, int borderWidth, Color borderColor, Color color);
         void RayGuiDrawText(const char *text, Rectangle textBounds, int alignment, Color tint);
         float GetGuiAlpha(void);
@@ -176,7 +196,8 @@ class DGuiWidget
         int DEFAULT_HEIGHT=50;      //! Used for set default height, will be overrided by widget subclass
 
         DWidgetType Type;
-        DGuiWidget *Parent;
+        DGuiWidget *Parent=nullptr;
+        DGuiWidget *Label=nullptr;
         
         OnGuiEventCallback OnGuiEvent;
         OnWidgetEventCallback OnWidgetEvent;
@@ -186,7 +207,7 @@ class DGuiWidget
         void GenerateId(void);
         bool InitFromTree(DTools::DTree& WidgetTree);
         void BackupCurrentGuiStyle(void);
-        void SetWidgetGuiStyle(void);
+        void UpdateCurrentGuiStyle(void);
         void RestoreCurrentGuiStyle(void);
 
     private:

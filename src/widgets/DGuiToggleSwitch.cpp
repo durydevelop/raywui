@@ -22,16 +22,18 @@ void DGuiToggleSwitch::InitDefault(void)
 {
     DGuiToggleSlide::InitDefault();
     Checked=false;
-    AddItem("ON");
+    // ItemIndex 0
     AddItem("OFF");
+    // ItemIndex 1
+    AddItem("ON");
 }
 
 bool DGuiToggleSwitch::IsChecked(void)
 {
-    return Checked;
+    return ItemIndex == 1;
 }
 
 void DGuiToggleSwitch::SetChecked(bool Checked)
 {
-    this->Checked=Checked;
+    Checked ? ItemIndex=1 : ItemIndex=0;
 }

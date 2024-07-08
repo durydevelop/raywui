@@ -1,7 +1,9 @@
 #include "DGuiLabel.h"
-//#include "raywui_log.h"
+#include "raywui_log.h"
 
-//const char TAG[10]="DGuiLabel";
+using namespace DTools;
+
+const char TAG[10]="DGuiLabel";
 
 DGuiLabel::DGuiLabel(int LeftPos, int TopPos, int ControlWidth, int ControlHeight, DGuiWidget *ParentWidget) : DGuiWidget(DLABEL,LeftPos,TopPos,ControlWidth,ControlHeight,ParentWidget)
 {
@@ -12,14 +14,20 @@ DGuiLabel::DGuiLabel(Rectangle WidgetBounds, DGuiWidget *ParentWidget) : DGuiWid
     InitDefault();
 }
 
-DGuiLabel::DGuiLabel(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(WidgetTree,ParentWidget,EventCallback)
+DGuiLabel::DGuiLabel(DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(WidgetTree,ParentWidget,EventCallback)
 {
     InitDefault();
     Ready=(Type == DLABEL);
 }
 
-DGuiLabel::DGuiLabel(const std::string& LayoutFilename, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiLabel(std::move(ExtractDTree(LayoutFilename)),ParentWidget,EventCallback)
+DGuiLabel::DGuiLabel(const fs::path& LayoutFilename, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiLabel(std::move(ExtractDTree(LayoutFilename)),ParentWidget,EventCallback)
 {
+    Log::debug(TAG,"LayoutFilename Contructor");
+}
+
+DGuiLabel::DGuiLabel(DGuiWidget* ParentWidget) : DGuiLabel(Rectangle(0,0,0,0),ParentWidget)
+{
+    Log::debug(TAG,"Void Contructor");
 }
 
 void DGuiLabel::InitDefault(void)

@@ -204,37 +204,72 @@ bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
     SetBounds(WidgetBounds);
 
     // Text
-    SetText(WidgetTree.ReadString(DJsonTree::ITEM_TEXT,""));
+    SetText(WidgetTree.ReadString(DJsonTree::ITEM_TEXT,""),false);
 
     // ** Read widget properties **
     // Text size
-    Properties.TextSize=WidgetTree.ReadInteger(DJsonTree::ITEM_TEXT_SIZE,-1);
+    int IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_TEXT_SIZE,0);
+    SetTextSize(IntValue,false);
+
     // Text align
     std::string AlignHoriz=WidgetTree.ReadString(DJsonTree::ITEM_TEXT_ALIGN_H,"");
     std::string AlignVert=WidgetTree.ReadString(DJsonTree::ITEM_TEXT_ALIGN_V,"");
     SetTextAlign(AlignHoriz,AlignVert);
     
-// @todo (sono già gestite da Widget->Draw)
-//    Properties.TextColor=GuiGetStyle(Type,TEXT_COLOR_NORMAL);
-//    Properties.TextSpacing=GuiGetStyle(Type,TEXT_SPACING);
-    
-    // Borders
-//    Properties.BorderWidth=GuiGetStyle(Type,BORDER_WIDTH);
-//   Properties.BorderColor=GuiGetStyle(Type,BORDER_COLOR_NORMAL);
+    // Text color
+    std::string StrValue=WidgetTree.ReadString(DJsonTree::ITEM_TEXT_COLOR,"");
+    if (!StrValue.empty()) {
+        Properties.TextColor=ColorStringToInt(StrValue);
+    }
 
-    // Other Colors
-//    Properties.LineColor=GuiGetStyle(Type,LINE_COLOR);
-//    Properties.BackGroundColor=GuiGetStyle(Type,BACKGROUND_COLOR);
+    // Text spacing
+    IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_TEXT_SPACING,0);
+    if (IntValue > 0) {
+        Properties.TextSpacing=IntValue;
+    }
 
+    // Border width
+    IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_BORDER_WIDTH, 0);
+    if (IntValue > 0) {
+        Properties.BorderWidth=IntValue;
+    }
+
+    // Border color
+    IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_BORDER_COLOR, 0);
+    if (IntValue > 0) {
+        Properties.BorderColor=IntValue;
+    }
+
+    // Line color
+    IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_LINE_COLOR, 0);
+    if (IntValue > 0) {
+        Properties.LineColor=IntValue;
+    }
+
+    // Backround color
+    IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_BACKGROUND_COLOR, 0);
+    if (IntValue > 0) {
+        Properties.BackGroundColor=IntValue;
+    }
 
     // AnchorId
     // Widget->Properties.AnchorId=WidgetTree.ReadString(DJsonTree::ITEM_ANCHOR_ID,""); // deprecated
 
     // Possible docking position
     std::string DockingSide=WidgetTree.ReadString(DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIDE,"");
-    int DockingSize=WidgetTree.ReadInteger(DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,-1);
     if (!DockingSide.empty()) {
+        int DockingSize=WidgetTree.ReadInteger(DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,-1);
         SetDocking(DockingSide,DockingSize);
+    }
+
+    // Outside label
+    std::string LabelText=WidgetTree.ReadString(DJsonTree::ITEM_LABEL,DJsonTree::ITEM_TEXT,"");
+    if (!LabelText.empty()) {
+        // Has text
+        int FontSize=WidgetTree.ReadInteger(DJsonTree::ITEM_LABEL,DJsonTree::ITEM_TEXT_SIZE,0);
+        std::string LabelSide=WidgetTree.ReadString(DJsonTree::ITEM_LABEL,DJsonTree::ITEM_SIDE,"");
+        int LabelOffset=WidgetTree.ReadInteger(DJsonTree::ITEM_LABEL,DJsonTree::ITEM_OFFSET,0);
+        SetLabel(LabelText,FontSize,NameToDocking(LabelSide,DDocking::DOCK_LEFT),LabelOffset);
     }
 
     // Name
@@ -253,11 +288,77 @@ bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
     // ShowBorder
     Properties.ShowBorder=WidgetTree.ReadBool(DJsonTree::ITEM_SHOW_BORDER,false);
 
-    // Border width
-    int BorderWidth=WidgetTree.ReadInteger(DJsonTree::ITEM_BORDER_WIDTH, 0);
-    if (BorderWidth > 0) Properties.BorderWidth=BorderWidth;
-
     return true;
+}
+
+void DGuiWidget::SetLabel(std::string LabelText, int FontSize, DDocking LabelSide, int LabelOffset)
+{
+    // Text
+    if (LabelText.empty()) {
+        return;
+    }
+    
+    // Font size
+    if (FontSize == 0) {
+        // Use widget one
+        FontSize=Properties.TextSize;
+    }
+    else if (FontSize < GuiGetStyle(DEFAULT,TEXT_SIZE)) {
+        FontSize=GuiGetStyle(DEFAULT,TEXT_SIZE);
+    }
+
+    if (!Label) {
+        // Not yet created
+        Label=new DGuiLabel(nullptr);
+    }
+
+    Label->SetTextSize(FontSize,false);
+    Label->SetText(LabelText,true);
+    
+    // Calculate position
+    switch (LabelSide) {
+        case DDocking::DOCK_BOTTOM:
+            Label->Bounds.x=Bounds.x+((Bounds.width-Label->Bounds.width)/2); // Center horizzontally
+            Label->Bounds.y=Bounds.y+Bounds.height+LabelOffset;
+            break;
+        case DDocking::DOCK_TOP:
+            Label->Bounds.x=Bounds.x+((Bounds.width-Label->Bounds.width)/2); // Center horizzontally
+            Label->Bounds.y=Bounds.y-Label->Bounds.height-LabelOffset;
+            break;
+        case DDocking::DOCK_LEFT:
+            Label->Bounds.x=Bounds.x-Label->Bounds.width-LabelOffset;
+            Label->Bounds.y=Bounds.y+((Bounds.height-Label->Bounds.height)/2); // Center vertically
+            break;
+        case DDocking::DOCK_RIGHT:
+            Label->Bounds.x=Bounds.x+Bounds.width+LabelOffset;
+            Label->Bounds.y=Bounds.y+((Bounds.height-Label->Bounds.height)/2); // Center vertically
+            break;
+        default:
+            break;
+    }
+
+    Properties.LabelSide=LabelSide;
+    Properties.LabelOffset=LabelOffset;
+}
+
+DGuiWidget::DDocking DGuiWidget::NameToDocking(std::string SideName, DGuiWidget::DDocking Default)
+{
+    if (SideName.empty()) {
+        return Default;
+    }
+    else if (DString::CmpNoCase(SideName,DJsonTree::VALUE_BOTTOM)) {
+        return DGuiWidget::DDocking::DOCK_BOTTOM;
+    }
+    else if (DString::CmpNoCase(SideName,DJsonTree::VALUE_TOP)) {
+        return DGuiWidget::DDocking::DOCK_TOP;
+    }
+    else if (DString::CmpNoCase(SideName,DJsonTree::VALUE_LEFT)) {
+        return DGuiWidget::DDocking::DOCK_LEFT;
+    }
+    else if (DString::CmpNoCase(SideName,DJsonTree::VALUE_RIGHT)) {
+        return DGuiWidget::DDocking::DOCK_RIGHT;
+    }
+    return Default;
 }
 
 void DGuiWidget::GenerateId(void)
@@ -441,7 +542,8 @@ void DGuiWidget::SetBounds(int LeftPos, int TopPos, int Width, int Height)
  */
 void DGuiWidget::SetBounds(Rectangle WidgetBounds)
 {
-    Bounds=WidgetBounds;
+    SetPos(WidgetBounds.x,WidgetBounds.y);
+    SetSize(WidgetBounds.width,WidgetBounds.height);
 };
 
 /**
@@ -449,9 +551,36 @@ void DGuiWidget::SetBounds(Rectangle WidgetBounds)
  * 
  * @param NewSize   ->  the new text size.
  */
-void DGuiWidget::SetTextSize(int NewSize)
+void DGuiWidget::SetTextSize(int NewSize, bool Resize)
 {
+    if (NewSize <= 0) {
+        NewSize=GuiGetStyle(DEFAULT,TEXT_SIZE);
+    }
+
     Properties.TextSize=NewSize;
+
+    if (Resize) {
+        UpdateSize();
+    }
+}
+
+void DGuiWidget::UpdateSize(void)
+{
+    // Measure text
+    int TextWidth=GetTextWidth(Text,guiFont,Properties.TextSize);
+    /// @todo int TextWidth=GetTextWidth(Text,Properties.TextFont,Properties.TextSize);
+    // Expand
+    int HeightPadding=(Properties.BorderWidth*2)+(Properties.TextPadding*2);
+    int WidthPadding=HeightPadding+Properties.TextSpacing;
+    SetWidth(TextWidth+WidthPadding);
+    SetHeight(Properties.TextSize+HeightPadding);
+}
+
+void DGuiWidget::UpdateLabel(void)
+{
+    if (Label) {
+        SetLabel(Label->Text,Label->Properties.TextSize,Properties.LabelSide,Properties.LabelOffset);
+    }
 }
 
 void DGuiWidget::SetDocking(std::string DockingSideName, int OtherSize) {
@@ -538,6 +667,10 @@ void DGuiWidget::SetBorderWidth(uint8_t NewWidth) {
     Properties.BorderWidth=NewWidth;
 }
 
+void DGuiWidget::SetBorderVisible(bool Visible) {
+    Properties.BorderVisible=Visible;
+}
+
 DWidgetType DGuiWidget::GetWidgetType(void) {
     return Type;
 }
@@ -573,11 +706,15 @@ DGuiWidget* DGuiWidget::GetParent(void) {
     return Parent;
 }
 
-void DGuiWidget::SetText(std::string NewText) {
+void DGuiWidget::SetText(std::string NewText, bool Resize) {
     if (NewText == Text) {
         return;
     }
     Text=NewText;
+
+    if (Resize) {
+        UpdateSize();
+    }
 }
 
 const std::string& DGuiWidget::GetText(void) {
@@ -629,30 +766,36 @@ void DGuiWidget::SetVisible(bool Visible) {
 
 /**
  * @brief Set all common proprerties to its current values.
+ * 
  */
 void DGuiWidget::SetWidgetType(DWidgetType WidgetType)
 {
     Type=WidgetType;
     // Text
+    /// @todo Properties.TextFont=GuiGetFont();
     Properties.TextColor=GuiGetStyle(Type,TEXT_COLOR_NORMAL);
     Properties.TextPadding=GuiGetStyle(Type, TEXT_PADDING);
-    //int align=GuiGetStyle(Type,TEXT_ALIGNMENT);
     Properties.TextAlign.Horiz=(DTextAlignH) GuiGetStyle(Type,TEXT_ALIGNMENT);
-    // from global (DEFAULT) control
+    // From global (DEFAULT) control
     Properties.TextAlign.Vert=(DTextAlignV) GuiGetStyle(DEFAULT,TEXT_ALIGNMENT_VERTICAL);
     Properties.TextSize=GuiGetStyle(DEFAULT,TEXT_SIZE);
     Properties.TextSpacing=GuiGetStyle(DEFAULT,TEXT_SPACING);
     
-    // Borders
-    Properties.BorderWidth=GuiGetStyle(Type,BORDER_WIDTH);
+    // Colors
     Properties.BorderColor=GuiGetStyle(Type,BORDER_COLOR_NORMAL);
-
-    // Other Colors
     Properties.LineColor=GuiGetStyle(Type,LINE_COLOR);
     Properties.BackGroundColor=GuiGetStyle(Type,BACKGROUND_COLOR);
+
+    // Others
+    Properties.BorderWidth=GuiGetStyle(Type,BORDER_WIDTH);
+    Properties.BorderVisible=false;
 }
 
 // ********************** Methods used during draw **********************
+/**
+ * @brief Backup current raygui global style values
+ * 
+ */
 void DGuiWidget::BackupCurrentGuiStyle(void) {
     // Text
     TempStyle.TextColor=GuiGetStyle(Type,TEXT_COLOR_NORMAL);
@@ -673,7 +816,7 @@ void DGuiWidget::BackupCurrentGuiStyle(void) {
     TempStyle.TextAlign.Vert=(DTextAlignV) GuiGetStyle(DEFAULT,TEXT_ALIGNMENT_VERTICAL);
 }
 
-void DGuiWidget::SetWidgetGuiStyle(void) {
+void DGuiWidget::UpdateCurrentGuiStyle(void) {
     // Text
     GuiSetStyle(Type,TEXT_COLOR_NORMAL,Properties.TextColor);
     GuiSetStyle(Type,TEXT_ALIGNMENT,Properties.TextAlign.Horiz);
@@ -687,7 +830,7 @@ void DGuiWidget::SetWidgetGuiStyle(void) {
     GuiSetStyle(Type,LINE_COLOR,Properties.LineColor);
     GuiSetStyle(Type,BACKGROUND_COLOR,Properties.BackGroundColor);
 
-    // Properties from global (DEFAULT) control
+    // Properties for all (DEFAULT) control
     GuiSetStyle(DEFAULT,TEXT_SIZE,Properties.TextSize);
     GuiSetStyle(DEFAULT,TEXT_SPACING,Properties.TextSpacing);
     GuiSetStyle(DEFAULT,TEXT_ALIGNMENT_VERTICAL,Properties.TextAlign.Vert);
@@ -725,10 +868,22 @@ void DGuiWidget::RestoreCurrentGuiStyle(void) {
 void DGuiWidget::Draws(void) {
     if (Properties.Visible) {
         BackupCurrentGuiStyle();
-        SetWidgetGuiStyle();
+        UpdateCurrentGuiStyle();
 
         // Draw Widget
         Draw();
+
+        if (Properties.BorderVisible) {
+            DrawRectangleLinesEx(Bounds,Properties.BorderWidth,GetColor(Properties.BorderColor));
+        }
+
+        if (Label) {
+            if (Type != DLABEL) {
+                // DGuiLabel cannot have a label (otherwise loops forever and does not make sense)
+                // Draw Label (use Draws() to execute complete draw cycle)
+                Label->Draws();
+            }
+        }
 
         // Draw Borders
         if(Properties.ShowBorder) {
@@ -747,7 +902,7 @@ void DGuiWidget::Draws(void) {
  * @return false if an error occours or not all widgets are loaded.
  * 
  */
-DTree DGuiWidget::ExtractDTree(const std::string& Filename) {
+DTree DGuiWidget::ExtractDTree(const fs::path& Filename) {
     Log::debug(TAG,"Loading %s",Filename.c_str());
     std::string JsonFilename;
     if (DString::CmpNoCase(DPath::GetExt(Filename),"rgl")) {
@@ -930,6 +1085,53 @@ std::string DGuiWidget::TypeToName(DWidgetType WidgetType)
     return WidgetTypeName;
 }
 
+/**
+ * @brief Decode a string that rappresent a color in its integer value.
+ * 
+ * Supported formats:
+ * Hex:
+ *  "#rrggbb"    -> RGB
+ *  "#rrggbbaa"  -> RGB + alpha
+ *  "0x...."
+ *  "Hex...."
+ * 
+ * @todo
+ *  [ ] Name    Red
+ *  [ ] Rgb     rgb(255, 0, 0)
+ *  [x] Hex     #ff0000
+ *  [ ] Hsl     hsl(0, 100%, 50%)
+ *  [ ] Hwb     hwb(0, 0%, 0%)
+ *  [ ] Cmyk	cmyk(0%, 100%, 100%, 0%)
+ *  [ ] Ncol	R0, 0%, 0%
+ * 
+ * @param ColorString string in hex color format.
+ * @return the integer rappresentation of a color in Raylib.
+ */
+unsigned int DGuiWidget::ColorStringToInt(std::string ColorString)
+{
+    std::vector<std::string> Patterns={"#", "0x", "HEX"};
+    for (std::string& Pattern : Patterns) {
+        if (DString::StartsWith(ColorString, Pattern)) {
+            std::string s;
+            if (ColorString.size() >= Pattern.size()+8) {
+                s=ColorString.substr(Pattern.size(),8);
+            }
+            else if (ColorString.size() >= Pattern.size()+6) {
+                s=ColorString.substr(Pattern.size(),6);
+                s.append("FF");
+            }
+            if (!s.empty()) {
+                std::stringstream ss;
+                ss << std::hex << s;
+                unsigned int value;
+                ss >> value;
+                return value;
+            }
+        }
+    }
+    return 0;
+}
+
 bool DGuiWidget::IsReady(void)
 {
     return Ready;
@@ -961,9 +1163,67 @@ bool DGuiWidget::IsGuiLocked(void)
     return guiLocked;
 }
 
-int DGuiWidget::GetGuiTextWidth(const char *text)
+// Gui get text width considering icon
+int DGuiWidget::GetTextWidth(std::string TextStr, Font TextFont, float FontSize)
 {
-    return GetTextWidth(text);
+    #if !defined(ICON_TEXT_PADDING)
+        #define ICON_TEXT_PADDING   4
+    #endif
+
+    // detect icon pattern
+    int textIconOffset = 0;
+    if (!TextStr.empty()) {
+        if (TextStr[0] == '#') {
+            for (int i = 1; (i < 5) && (TextStr[i] != '\0'); i++) {
+                if (TextStr[i] == '#') {
+                    textIconOffset = i;
+                    break;
+                }
+            }
+        }
+
+        const char *text=&(TextStr.c_str()[textIconOffset]);
+
+        int textSize=MeasureText(text,FontSize);
+        /// @todo misurare icona
+
+        return textSize;
+/*
+        // Custom MeasureText() implementation
+        // Make sure guiFont is set, GuiGetStyle() initializes it lazynessly
+        //float fontSize = (float)GuiGetStyle(DEFAULT, TEXT_SIZE);
+        //Vector2 textSize = { 0 };
+        if ((TextFont.texture.id > 0) && (text != NULL))
+        {
+            // Get size in bytes of text, considering end of line and line break
+            int size = 0;
+            for (int i = 0; i < MAX_LINE_BUFFER_SIZE; i++)
+            {
+                if ((text[i] != '\0') && (text[i] != '\n')) size++;
+                else break;
+            }
+
+            float scaleFactor = FontSize/(float)TextFont.baseSize;
+            textSize.y = (float)TextFont.baseSize*scaleFactor;
+            float glyphWidth = 0.0f;
+
+            for (int i = 0, codepointSize = 0; i < size; i += codepointSize)
+            {
+                int codepoint = GetCodepointNext(&text[i], &codepointSize);
+                int codepointIndex = GetGlyphIndex(TextFont, codepoint);
+
+                if (TextFont.glyphs[codepointIndex].advanceX == 0) glyphWidth = ((float)TextFont.recs[codepointIndex].width*scaleFactor);
+                else glyphWidth = ((float)TextFont.glyphs[codepointIndex].advanceX*scaleFactor);
+
+                textSize.x += (glyphWidth + (float)GuiGetStyle(DEFAULT, TEXT_SPACING));
+            }
+        }
+
+        if (textIconOffset > 0) textSize.x += (RAYGUI_ICON_SIZE - ICON_TEXT_PADDING);
+*/
+    }
+
+    //return (int)textSize.x;
 }
 
 void DGuiWidget::RayGuiDrawRectangle(Rectangle rec, int borderWidth, Color borderColor, Color color)

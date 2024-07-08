@@ -3,6 +3,7 @@
 
 #include <raygui.h>
 #include <DGuiWidget.h>
+#include "dpplib/DFilesystem.h"
 
 class DGuiLabel : public DGuiWidget
 {
@@ -10,11 +11,11 @@ class DGuiLabel : public DGuiWidget
         DGuiLabel(int LeftPos, int TopPos, int ControlWidth, int ControlHeight, DGuiWidget *ParentWidget);
         DGuiLabel(Rectangle WidgetBounds, DGuiWidget *ParentWidget);
         DGuiLabel(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
-        DGuiLabel(const std::string& LayoutFilename, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
+        explicit DGuiLabel(const DTools::fs::path& LayoutFilename, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
+        explicit DGuiLabel(DGuiWidget* ParentWidget);
 
         void SetPrefix(std::string PrefixText);
         void SetSuffix(std::string SuffixText);
-
         void ClearText(void);
 
         void Draw() override;

@@ -2447,7 +2447,7 @@ int GuiTextBox(Rectangle bounds, char *text, int textSize, bool editMode)
     return GuiTextBoxMasked(bounds, text, NULL, textSize, editMode);
 }
 
-// Text Box control
+// Text Box control with mask text
 // NOTE: Returns true on ENTER pressed (useful for data validation)
 int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode)
 {
@@ -2587,10 +2587,18 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
             }
 
             // Move cursor to start
-            if ((textLength > 0) && IsKeyPressed(KEY_HOME)) textBoxCursorIndex = 0;
+            if ((textLength > 0) && IsKeyPressed(KEY_HOME))
+            {
+                textBoxCursorIndex = 0;
+                textBoxShadowCursorIndex = 0;
+            }
 
             // Move cursor to end
-            if ((textLength > textBoxCursorIndex) && IsKeyPressed(KEY_END)) textBoxCursorIndex = textLength;
+            if ((textLength > textBoxCursorIndex) && IsKeyPressed(KEY_END))
+            {
+                textBoxCursorIndex = textLength;
+                textBoxShadowCursorIndex = shadowBuff ? shadowLength : 0;
+            }
 
             // Delete codepoint from text, after current cursor position
             if ((textLength > textBoxCursorIndex) && (IsKeyPressed(KEY_DELETE) || (IsKeyDown(KEY_DELETE) && (autoCursorCooldownCounter >= RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN))))
@@ -2808,6 +2816,7 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
                 (!CheckCollisionPointRec(mousePosition, bounds) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)))
             {
                 textBoxCursorIndex = 0;     // GLOBAL: Reset the shared cursor index
+                textBoxShadowCursorIndex = 0;
                 result = 1;
             }
         }
@@ -2820,6 +2829,7 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
                     textBoxCursorIndex = (int)strlen(mainBuff);   // GLOBAL: Place cursor index to the end of current text
+                    textBoxShadowCursorIndex = shadowBuff ? (int)strlen(shadowBuff) : 0;
                     result = 1;
                 }
             }

@@ -15,6 +15,7 @@
             "Text": "Raywui widgets demo",
             "TextSize": 25,
             "TextAlignH": "Center",
+            "TextColor": "#686868FF",
             "Bounds": {
                 "Left": 0,
                 "Top": 0,
@@ -25,71 +26,91 @@
         {
             "Type": "ToggleSwitch",
             "Name": "Toggle2",
-            "Text": "ToggleSwitch",
             "TextSize": 20,
             "Bounds": {
                 "Left": 200,
                 "Top": 50,
                 "Width": 100,
                 "Height": 48
+            },
+            "Label": {
+                "Text": "ToggleSwitch",
+                "Side": "Right",
+                "Offset": 5
             }
         },
         {
             "Type": "ToggleSlide",
             "Name": "Toggle1",
             "Items": ["ONE","TWO","TREE","BOOM"],
-            "Text": "ToggleSlide",
             "TextSize": 20,
             "Bounds": {
                 "Left": 200,
                 "Top": 100,
                 "Width": 400,
                 "Height": 48
+            },
+            "Label": {
+                "Text": "Image",
+                "TextSize": 25,
+                "Side": "Left",
+                "Offset": 5
             }
         },
         {
             "Type": "Image",
             "Name": "Image1",
-            "Filename": "red1.png",
-            "Text": "",
-            "TextSize": 25,
-            "TextAlignH": "Center",
+            "Filename": "layouts/red1.png",
             "Bounds": {
-                "Left": 200,
+                "Left": 400,
                 "Top": 150,
                 "Width": 200,
                 "Height": 200
+            },
+            "Label": {
+                "Text": "Image",
+                "TextSize": 11,
+                "Side": "left",
+                "Offset": 10
             }
         },
         {
             "Type": "Image",
             "Name": "Image2",
-            "Filename": "red1.png",
+            "Filename": "layouts/red1.png",
             "Rotation": "0",
             "Scale": "1.2",
-            "Text": "",
-            "TextSize": 25,
-            "TextAlignH": "Center",
             "Bounds": {
-                "Left": 300,
+                "Left": 500,
                 "Top": 150,
                 "Width": 200,
                 "Height": 200
+            },
+            "Label": {
+                "Text": "Image scaled 1.2",
+                "TextSize": 11,
+                "Side": "Bottom",
+                "Offset": 10
             }
         },
         {
             "Type": "Edit",
             "Name": "Edit1",
-            "Text": "",
             "TextSize": 40,
             "Bounds": {
                 "Left": 100,
                 "Top": 360,
-                "Width": 400,
+                "Width": 200,
                 "Height": 48
             },
             "ReadOnly": false,
-            "MaxTextLenght": 50
+            "MaxTextLenght": 50,
+            "Label": {
+                "Text": "Edit",
+                "TextSize": 15,
+                "Side": "Right",
+                "Offset": 10
+            }
         },
         {
             "Type": "Button",
@@ -97,8 +118,8 @@
             "Text": "Button",
             "TextSize": 20,
             "Bounds": {
-                "Left": 0,
-                "Top": 24,
+                "Left": 100,
+                "Top": 300,
                 "Width": 100,
                 "Height": 48
             }

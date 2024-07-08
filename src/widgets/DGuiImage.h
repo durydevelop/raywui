@@ -12,6 +12,7 @@ class DGuiImage : public DGuiWidget
         DGuiImage(const std::string& LayoutFilename, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
 
         bool LoadFromFile(const std::string& Filename);
+        void SetScale(float ScaleFactor);
 
         void Draw() override;
 
@@ -19,11 +20,11 @@ class DGuiImage : public DGuiWidget
     void InitDefault(void);
         void FinalizeFromTree(DTools::DTree& WidgetTree);
         
-        Texture2D texture;
+        Texture2D imageTexture;
         std::string Filename;
-        float scaleValue;
-        float rotationValue;
-        Color bgColor;
+        float ScaleValue;
+        float RotationValue;
+        Color BgColor;
         
 };
 

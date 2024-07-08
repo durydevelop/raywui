@@ -12,21 +12,22 @@ class DGuiToggleSlide : public DGuiWidget
         DGuiToggleSlide(const std::string& LayoutFilename, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
 
         void SetSliderPadding(int Padding);
+        void SetItemIndex(int Index);
+        int GetItemIndex(void);
 
         void Draw() override;
 
     protected:
         void InitDefault(void);
         void AddItem(const std::string &Text);
-        void SetItemIndex(int Index);
-        int GetItemIndex(void);
+
+        int ItemIndex;                  /// Current selected item index
 
     private:
         void FinalizeFromTree(DTools::DTree& WidgetTree);
         int DrawToggleSlider(Rectangle bounds, int *active);
 
         std::vector<std::string> Items; /// List of items text
-        int ItemIndex;                  /// Current selected item index
         float TextBoundsWidth;          /// With of total concat text of the slider
         int SliderPadding;              /// Padding of the slider
 };
