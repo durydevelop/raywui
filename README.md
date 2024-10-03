@@ -1,6 +1,6 @@
-# raywui is a C++ library for writing widgets based gui
+# raywui is a C++ library for writing widgets based gui designed especially for headless SO (like raspberry pi of without grafical desktop).
 
-Based on top of Raygui and Raylib, this project aim to create an eco-system of widget classes.
+Based on top of Raygui and Raylib, this project aim to create an eco-system of C++ widget classes.
 
 Can be used in 2 way:
 
