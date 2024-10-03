@@ -212,7 +212,7 @@ char* DGuiEdit::GetTextPtr(void) {
     }
 }
 
-void DGuiEdit::SetText(std::string NewText, bool Resize) {
+void DGuiEdit::SetText(std::string NewText, bool ForceAutoSize) {
     if (hideBuff) {
         // Password mode
         if (strcmp(hideBuff,NewText.c_str()) == 0) {
@@ -232,8 +232,8 @@ void DGuiEdit::SetText(std::string NewText, bool Resize) {
         Text.assign(viewBuff);
     }
 
-    if (Resize) {
-        UpdateSize();
+    if (ForceAutoSize) {
+        AutoSize();
     }
 }
 

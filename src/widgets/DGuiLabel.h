@@ -22,6 +22,7 @@ class DGuiLabel : public DGuiWidget
 
     private:
         void InitDefault(void);
+        void FinalizeFromTree(DTools::DTree& WidgetTree);
         std::string TextPrefix;
         std::string TextSuffix;
 };

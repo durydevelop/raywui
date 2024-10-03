@@ -25,7 +25,7 @@ class DGuiEdit : public DGuiWidget
         void Draw() override;
         
         const std::string& GetText(void) override;
-        void SetText(std::string NewText, bool Resize) override;
+        void SetText(std::string NewText, bool ForceAutoSize) override;
         char* GetTextPtr(void);
 
         bool IsEmpty(void);

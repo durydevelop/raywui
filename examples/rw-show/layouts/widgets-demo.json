@@ -16,10 +16,11 @@
             "TextSize": 25,
             "TextAlignH": "Center",
             "TextColor": "#686868FF",
+            "BorderVisible": "true",
             "Bounds": {
-                "Left": 0,
-                "Top": 0,
-                "Width": 800,
+                "Left": 2,
+                "Top": 2,
+                "Width": 794,
                 "Height": 24
             }
         },
@@ -122,6 +123,23 @@
                 "Top": 300,
                 "Width": 100,
                 "Height": 48
+            }
+        },
+        {
+            "Type": "Label",
+            "Name": "LabelExample",
+            "Text": "Label",
+            "TextSize": 20,
+            "TextAlignH": "Left",
+            "TextColor": "#686868FF",
+            "TextPadding": 4,
+            "TextSpacing": 2,
+            "BorderVisible": "true",
+            "Bounds": {
+                "Left": 10,
+                "Top": 200,
+                "Width": 100,
+                "Height": 20
             }
         },
         {

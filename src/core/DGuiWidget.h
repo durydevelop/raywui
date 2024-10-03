@@ -44,7 +44,10 @@ class DGuiWidget
             inline static const std::string ITEM_TEXT_SIZE="TextSize";
             inline static const std::string ITEM_TEXT_COLOR="TextColor";
             inline static const std::string ITEM_TEXT_SPACING="TextSpacing";
+            inline static const std::string ITEM_TEXT_PADDING="TextPadding";
             inline static const std::string ITEM_BORDER_COLOR="BorderColor";
+            inline static const std::string ITEM_BORDER_WIDTH="BorderWidth";
+            inline static const std::string ITEM_BORDER_VISIBLE="BorderVisible";
             inline static const std::string ITEM_LINE_COLOR="LineColor";
             inline static const std::string ITEM_BACKGROUND_COLOR="BackgroundColor";
             inline static const std::string ITEM_TEXT_ALIGN_H="TextAlignH";
@@ -64,11 +67,12 @@ class DGuiWidget
             inline static const std::string ITEM_ENABLED="Enabled";
             inline static const std::string ITEM_VISIBLE="Visible";
             inline static const std::string ITEM_SHOW_BORDER="ShowBorder";
-            inline static const std::string ITEM_BORDER_WIDTH="BorderWidth";
             inline static const std::string ITEM_FILENAME="Filename";
             inline static const std::string ITEM_ROTATION="Rotation";
             inline static const std::string ITEM_SCALE="Scale";
             inline static const std::string ITEM_LABEL="Label";
+            inline static const std::string ITEM_PREFIX="Prefix";
+            inline static const std::string ITEM_SUFFIX="Suffix";
 
             inline static const std::string VALUE_BOTTOM="Bottom";
             inline static const std::string VALUE_TOP="Top";
@@ -91,17 +95,17 @@ class DGuiWidget
         struct DProperties {
             // ** Apparecne **
             /// Defaults are set in SetWidgetType()
-            /// @todo Font TextFont;
             unsigned int TextColor;
             int TextPadding;
-            DTextAlign TextAlign;
             int TextSize;
             int TextSpacing;
-            unsigned int BorderColor;
-            unsigned int LineColor;
+            DTextAlign TextAlign;
             unsigned int BackGroundColor;
+            unsigned int BorderColor;
             int BorderWidth;
             bool BorderVisible; /// Used to override border visible in widgets that does not show it.
+            unsigned int LineColor;
+            /// @todo Font TextFont;
             /// Deprecated std::string AnchorId;
 
             /// Defauts set here
@@ -110,7 +114,6 @@ class DGuiWidget
             // ** Behaviours **
             bool Enabled=true;
             bool Visible=true;
-            bool ShowBorder=false;
         }Properties;
         
         DGuiWidget(DWidgetType WidgetType, int LeftPos, int TopPos, int WidgetWidth, int WidgetHeight, DGuiWidget *ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
@@ -125,7 +128,7 @@ class DGuiWidget
         virtual void Draw() = 0;
         
         /// Virtual methods that CAN be reimplemented
-        virtual void SetText(std::string NewText, bool Resize);
+        virtual void SetText(std::string NewText, bool ForceAutoSize = false);
         virtual const std::string& GetText(void);
         virtual void SetOnGuiEvent(OnGuiEventCallback Callback);
 
@@ -143,7 +146,9 @@ class DGuiWidget
         void Draws(void);
 
         void SetWidgetType(DWidgetType WidgetType);
-        void SetTextSize(int NewSize, bool Resize);
+        void SetTextSize(int NewSize, bool ForceAutoSize);
+        void SetTextSpacing(int NewSpacing, bool ForceAutoSize);
+        void SetTextPadding(int NewPadding);
         void SetWidth(int Width);
         void SetHeight(int Height);
         void SetParent(DGuiWidget *Parent);
@@ -155,7 +160,7 @@ class DGuiWidget
         void SetDocking(DDocking DockingPos, int OtherSize);
         void SetDocking(std::string DockingSideName, int OtherSize);
         void SetLabel(std::string LabelText, int FontSize, DDocking LabelSide, int LabelOffset);
-        void UpdateSize(void);
+        void AutoSize(void);
         void UpdateLabel(void);
 /// @todo
 /// void SetDockingSide(DDocking DockingPos, int OtherSize);

@@ -17,6 +17,7 @@ DGuiLabel::DGuiLabel(Rectangle WidgetBounds, DGuiWidget *ParentWidget) : DGuiWid
 DGuiLabel::DGuiLabel(DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(WidgetTree,ParentWidget,EventCallback)
 {
     InitDefault();
+    FinalizeFromTree(WidgetTree);
     Ready=(Type == DLABEL);
 }
 
@@ -27,7 +28,7 @@ DGuiLabel::DGuiLabel(const fs::path& LayoutFilename, DGuiWidget* ParentWidget, O
 
 DGuiLabel::DGuiLabel(DGuiWidget* ParentWidget) : DGuiLabel(Rectangle(0,0,0,0),ParentWidget)
 {
-    Log::debug(TAG,"Void Contructor");
+    Log::debug(TAG,"Void Constructor");
 }
 
 void DGuiLabel::InitDefault(void)
@@ -35,6 +36,13 @@ void DGuiLabel::InitDefault(void)
     DEFAULT_SIDE_SIZE=50;
     DEFAULT_WIDTH=50;
     DEFAULT_HEIGHT=20;
+}
+
+void DGuiLabel::FinalizeFromTree(DTools::DTree& WidgetTree)
+{
+    // ** Read class specific properties **
+    TextPrefix=WidgetTree.ReadString(DJsonTree::ITEM_PREFIX,"");
+    TextSuffix=WidgetTree.ReadString(DJsonTree::ITEM_SUFFIX,"");
 }
 
 void DGuiLabel::SetPrefix(std::string PrefixText) {
@@ -50,11 +58,9 @@ void DGuiLabel::SetSuffix(std::string SuffixText) {
         return;
     }
     TextSuffix=SuffixText;
-    //Changed=true;
 }
 
 void DGuiLabel::ClearText(void) {
-    //Rectangle rect=GetTextBounds(LABEL, Bounds);
     DrawRectangle(Bounds.x,Bounds.y,Bounds.width,Bounds.height,GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 }
 
@@ -63,6 +69,8 @@ void DGuiLabel::ClearText(void) {
  */
 void DGuiLabel::Draw()
 {
+    // Draw background
     DrawRectangle(Bounds.x,Bounds.y,Bounds.width,Bounds.height,GetColor(Properties.BackGroundColor));
+    // Draw label
     GuiLabel(Bounds,(TextPrefix+Text+TextSuffix).c_str());
 }
