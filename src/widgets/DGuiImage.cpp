@@ -13,7 +13,7 @@ DGuiImage::DGuiImage(Rectangle WidgetBounds, DGuiWidget *ParentWidget, OnWidgetE
     InitDefault();
 }
 
-DGuiImage::DGuiImage(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(WidgetTree,ParentWidget,EventCallback)
+DGuiImage::DGuiImage(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(std::ref(WidgetTree),ParentWidget,EventCallback)
 {
     InitDefault();
     FinalizeFromTree(WidgetTree);
@@ -82,5 +82,6 @@ void DGuiImage::FinalizeFromTree(DTools::DTree& WidgetTree)
  */
 void DGuiImage::Draw()
 {
-    DrawTextureEx(imageTexture,Vector2(Bounds.x,Bounds.y),RotationValue,ScaleValue,GetColor(Properties.BackGroundColor));
+    Rectangle AbsBounds=GetAbsBounds();
+    DrawTextureEx(imageTexture,Vector2(AbsBounds.x,AbsBounds.y),RotationValue,ScaleValue,GetColor(Properties.BackGroundColor));
 }

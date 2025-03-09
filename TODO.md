@@ -1,11 +1,8 @@
 - [ ] RglToJson -> Convert only known but do not stops
 - [ ] RglToJson -> [BUG] does not show text
-- [x] DGuiApp addContainer with z-order
+- [ ] DGuiApp addContainer with z-order
 - [ ] DContainer change z-order
-- [ ] Widget Text as label
-    - [ ] set position
-    - [ ] set position in layout
-    - [ ] handle draw
-        - [ ] DGuiToggle...
-        - [ ] DGuiContainer ?
-        - [ ] DGuiImage
+- [x] Widget Text as Caption (only in widget that inherit DContainer)
+    - [ ] DGuiLed
+        - [x] set position (LEFT,RIGHT,TOP,BOTTOM)
+- [ ] DGuiWIdget::Properties,TextFont

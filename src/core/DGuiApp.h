@@ -3,6 +3,7 @@
 
 #include "DGuiCommon.h"
 #include <DGuiWidget.h>
+#include <dpplib/DPreferences.h>
 #include <functional>
 #include <string>
 #include <memory>
@@ -32,23 +33,34 @@ typedef struct DResult {
     }
 } DResult;
 
+class DCanvas {
+    public:
+        std::map<std::string,DGuiWidget*> Dynamics;
+        std::map<std::string,DGuiWidget*> Statics;
+        
+    private:
+
+};
+
 class DGuiApp
 {
     public:
-        //typedef std::function<void (void)> AppEvent;
         DGuiApp(size_t ScreenWidth = 0, size_t ScreenHeight = 0, std::string AppTitle = "");
         ~DGuiApp();
 
         void SetTitle(std::string AppTitle);
+        bool LoadCanvas(std::string CanvasFilename);
 
-        DGuiContainer* AddContainer(std::string ContainerName);
-        DGuiContainer* AddContainer(DGuiContainer *NewContainer);
-        DGuiContainer* AddContainerFromFile(std::string LayoutFilename);
-        DGuiWidget* AddStaticWidget(DGuiWidget *NewWidget);
-        DGuiWidget* AddStaticWidgetFromFile(std::string LayoutFilename);
-        DGuiContainer* SetActiveContainer(DGuiContainer *Container);
-        DGuiContainer* SetActiveContainer(std::string ContainerName);
-        DGuiContainer* GetContainerFromName(std::string ContainerName);
+        //DGuiWidget* AddDynamic(std::string WidgetName);
+        DGuiWidget* AddDynamic(DGuiWidget *NewWidget);
+        DGuiWidget* AddDynamicFromFile(std::string LayoutFilename);
+        DGuiWidget* AddDynamicFromTree(DTools::DTree& WidgetTree);
+        DGuiWidget* AddStatic(DGuiWidget *NewWidget);
+        DGuiWidget* AddStaticFromFile(std::string LayoutFilename);
+        DGuiWidget* AddStaticFromTree(DTools::DTree& WidgetTree);
+        DGuiWidget* SetCurrDynamic(DGuiWidget *Widget);
+        DGuiWidget* SetCurrDynamic(std::string WidgetName);
+        DGuiWidget* FindWidgetByName(std::string WidgetName);
 
         void ClearScreen(void);
         DResult Run(void);
@@ -65,16 +77,19 @@ class DGuiApp
         int Width;
         int Height;
         std::string Title;
-        DGuiContainer *ActiveContainer;
+        struct DCurrWidget {
+            DGuiWidget *Widget=nullptr;
+            std::string Name;
+        }CurrDynamic;
+        //DCurrWidget CurrWidget;
+        DCanvas Canvas;
+        
     private:
-        std::map<std::string,DGuiContainer*> Containers;
-        std::map<std::string,DGuiWidget*> StaticWidgets;
-
         // Event callbacks
         OnGuiEventCallback GuiEventCallback;
         std::function<void (void)> AppStartedCallback;
         std::function<void (void)> AppStoppedCallback;
         std::function<void (void)> TickCallback;
- };
+};
 
 #endif

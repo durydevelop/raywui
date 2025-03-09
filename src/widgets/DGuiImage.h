@@ -13,6 +13,7 @@ class DGuiImage : public DGuiWidget
 
         bool LoadFromFile(const std::string& Filename);
         void SetScale(float ScaleFactor);
+        /// @todo SetBackgroundColor()
 
         void Draw() override;
 
@@ -24,7 +25,7 @@ class DGuiImage : public DGuiWidget
         std::string Filename;
         float ScaleValue;
         float RotationValue;
-        Color BgColor;
+        //Color BgColor;
         
 };
 

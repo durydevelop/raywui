@@ -14,7 +14,7 @@ DGuiLabel::DGuiLabel(Rectangle WidgetBounds, DGuiWidget *ParentWidget) : DGuiWid
     InitDefault();
 }
 
-DGuiLabel::DGuiLabel(DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(WidgetTree,ParentWidget,EventCallback)
+DGuiLabel::DGuiLabel(DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(std::ref(WidgetTree),ParentWidget,EventCallback)
 {
     InitDefault();
     FinalizeFromTree(WidgetTree);
@@ -61,7 +61,8 @@ void DGuiLabel::SetSuffix(std::string SuffixText) {
 }
 
 void DGuiLabel::ClearText(void) {
-    DrawRectangle(Bounds.x,Bounds.y,Bounds.width,Bounds.height,GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+    Rectangle AbsBounds=GetAbsBounds();
+    DrawRectangle(AbsBounds.x,AbsBounds.y,AbsBounds.width,AbsBounds.height,GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 }
 
 /**
@@ -69,8 +70,10 @@ void DGuiLabel::ClearText(void) {
  */
 void DGuiLabel::Draw()
 {
+    Rectangle AbsBounds=GetAbsBounds();
     // Draw background
-    DrawRectangle(Bounds.x,Bounds.y,Bounds.width,Bounds.height,GetColor(Properties.BackGroundColor));
+    DrawRectangle(AbsBounds.x,AbsBounds.y,AbsBounds.width,AbsBounds.height,GetColor(Properties.BackGroundColor));
     // Draw label
-    GuiLabel(Bounds,(TextPrefix+Text+TextSuffix).c_str());
+    //GuiLabel(Bounds,(TextPrefix+Text+TextSuffix).c_str());
+    RayGuiDrawText(TextPrefix+Text+TextSuffix,GetTextBounds(),Properties.TextAlign,GetColor(Properties.TextColor));
 }

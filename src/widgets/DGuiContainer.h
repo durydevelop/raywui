@@ -2,6 +2,7 @@
 #define DGuiContainer_H
 
 #include <DGuiWidget.h>
+#include <DGuiLabel.h>
 #include <dpplib/DPreferences.h>
 /*
 class DGuiApp;
@@ -27,29 +28,42 @@ struct DRefWindow {
 */
 class DGuiContainer : public DGuiWidget {
     public:
+        struct DCaption {
+            DGuiLabel *Label=nullptr;
+            DSide Side=SIDE_LEFT;
+            int Offset=5;
+        };
+
         DGuiContainer(int LeftPos, int TopPos, int ContainerWidth, int ContainerHeight, DGuiWidget *ParentWidget);
         DGuiContainer(Rectangle ContainerBounds, DGuiWidget *ParentWidget);
         DGuiContainer(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
         DGuiContainer(const std::string& LayoutFilename, DGuiWidget *ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
         ~DGuiContainer();
 
+        virtual void SetCaption(std::string CaptionText, int FontSize, DSide Side, int Offset);
+        void UpdateCaption(void);
+        void UnsetCaption(void);
+
         DGuiWidget* AddWidget(DGuiWidget *Widget);
-//        DGuiWidget* AddWidget(DWidgetType WidgetType, int LeftPos, int TopPos, int WidgetWidth, int WidgetHeight, std::string Text);
-//        DGuiWidget* AddWidget(DWidgetType WidgetType, Rectangle WidgetBounds, std::string Text);
         DGuiWidget* AddWidget(DTools::DTree *WidgetTree);
+
+        DGuiWidget* FindWidgetById(std::string ChildId);
+
+
         void SetOnGuiEvent(OnGuiEventCallback Callback) override;
-        //bool LoadFromFile(std::string Filename);
-        //bool LoadFromTree(DTools::DTree Json);
-
-        DGuiWidget* GetChildFromId(std::string ChildId);
-        DGuiWidget* GetChildFromName(std::string ChildName);
-
+        DGuiWidget* FindWidgetByName(std::string ChildName) override;
         void Draw(void) override;
+
+        // Using vector to handle Z-Order
+        //std::vector<std::pair<std::string, DGuiWidget*>> Children;
+        std::map<std::string, DGuiWidget*> Children;
+
+    protected:
+       DCaption Caption;
 
     private:
         void FinalizeFromTree(DTools::DTree& WidgetTree);
-        //std::map<std::string, DGuiWidget*> Children;
-        std::vector<std::pair<std::string, DGuiWidget*>> Children;
+        
 };
 
 #endif

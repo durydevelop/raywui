@@ -12,7 +12,7 @@ DGuiToggleSlide::DGuiToggleSlide(Rectangle WidgetBounds, DGuiWidget *ParentWidge
     InitDefault();
 }
 
-DGuiToggleSlide::DGuiToggleSlide(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(WidgetTree,ParentWidget,EventCallback)
+DGuiToggleSlide::DGuiToggleSlide(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(std::ref(WidgetTree),ParentWidget,EventCallback)
 {
     InitDefault();
     FinalizeFromTree(WidgetTree);
@@ -85,8 +85,9 @@ void DGuiToggleSlide::Draw()
     if (!Items.empty()) {
         int CurrPadding=GuiGetStyle(SLIDER,SLIDER_PADDING);
         GuiSetStyle(SLIDER, SLIDER_PADDING, SliderPadding);
-        if (DrawToggleSlider(Bounds,&ItemIndex)) {
-            DWidgetEvent Event = { DEventCode::TOGGLE_CHANGED, reinterpret_cast<void *>(static_cast<intptr_t>(ItemIndex)) };
+        Rectangle AbsBounds=GetAbsBounds();
+        if (DrawToggleSlider(AbsBounds,&ItemIndex)) {
+            DWidgetEvent Event = { DEventCode::TOGGLE_CHANGED, ItemIndex, reinterpret_cast<void *>(static_cast<intptr_t>(ItemIndex)) };
             SendEvent(Event);
         }
         GuiSetStyle(SLIDER, SLIDER_PADDING, CurrPadding);
