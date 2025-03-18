@@ -30,13 +30,19 @@ struct DJsonTree {
             inline static const std::string ITEM_TEXT_ALIGN_H="TextAlignH";
             inline static const std::string ITEM_TEXT_ALIGN_V="TextAlignV";
             inline static const std::string ITEM_LEFT="Left";
+            inline static const std::string ITEM_RIGHT="Right";
             inline static const std::string ITEM_TOP="Top";
+            inline static const std::string ITEM_BOTTOM="Bottom";
+            inline static const std::string ITEM_CENTER="Center";
+            inline static const std::string ITEM_HCENTER="HCenter";
+            inline static const std::string ITEM_VCENTER="VCenter";
             inline static const std::string ITEM_WIDTH="Width";
             inline static const std::string ITEM_HEIGHT="Height";
             inline static const std::string ITEM_DOCKING="Docking";
             inline static const std::string ITEM_SIDE="Side";
             inline static const std::string ITEM_SIDE_OF="SideOf";
             inline static const std::string ITEM_SIDE_ALIGN="SideAlign";
+            inline static const std::string ITEM_PARENT_ALIGN="ParentAlign";
             inline static const std::string ITEM_SIZE="Size";
             inline static const std::string ITEM_OFFSET="Offset";
             inline static const std::string ITEM_BOUNDS="Bounds";
@@ -63,6 +69,7 @@ struct DJsonTree {
             inline static const std::string ITEM_BOTTOM_OF="BottomOf";
             inline static const std::string ITEM_TOP_OF="TopOf";
             inline static const std::string ITEM_CAPTION="Caption";
+            inline static const std::string ITEM_PADDING="Padding";
 
             inline static const std::string VALUE_BOTTOM="Bottom";
             inline static const std::string VALUE_TOP="Top";
@@ -106,7 +113,16 @@ enum DDocking { DOCK_HCENTER=-7, DOCK_VCENTER=-6, DOCK_CENTER=-5, DOCK_TOP=-4, D
 enum DSide { SIDE_LEFT = DOCK_LEFT, SIDE_RIGHT = DOCK_RIGHT, SIDE_BOTTOM = DOCK_BOTTOM, SIDE_TOP = DOCK_TOP, SIDE_CUSTOM = 0}; /// Generic side
 enum DAnchorSide { ANCHOR_NONE, ANCHOR_RIGHT_OF, ANCHOR_LEFT_OF, ANCHOR_BOTTOM_OF, ANCHOR_TOP_OF };
 enum DWidthMode { WIDTH_AUTO=-2, WIDTH_PARENT=-1, WIDTH_DEFAULT=0 };
-enum DAlign { ALIGN_LEFT, ALIGN_RIGHT, ALIGN_BOTTOM, ALIGN_TOP, ALIGN_CENTER }; /// Generic Align
+enum DAlign {
+    ALIGH_NONE=    0b0000000,
+    ALIGN_LEFT=    0b0000001,
+    ALIGN_RIGHT=   0b0000010,
+    ALIGN_BOTTOM=  0b0000100,
+    ALIGN_TOP=     0b0001000,
+    ALIGN_CENTER=  0b0010000,
+    ALIGN_HCENTER= 0b0100000,
+    ALIGN_VCENTER= 0b1000000
+}; /// Generic Align
 enum DTextAlignH { TEXT_ALIGN_HLEFT=TEXT_ALIGN_LEFT, TEXT_ALIGN_HCENTER=TEXT_ALIGN_CENTER, TEXT_ALIGN_HRIGHT=TEXT_ALIGN_RIGHT }; /// Text horizontal align
 enum DTextAlignV { TEXT_ALIGN_VTOP=TEXT_ALIGN_TOP, TEXT_ALIGN_VCENTER=TEXT_ALIGN_CENTER, TEXT_ALIGN_VBOTTOM=TEXT_ALIGN_BOTTOM }; /// Text vertical align
 typedef struct DTextAlign{
@@ -117,19 +133,26 @@ typedef struct DTextAlign{
 enum DEventCode { UNKOWN_EVENT=-1, BUTTON_PRESS, EDIT_END, TOGGLE_CHANGED, KEY_PRESSED };
 
 // Rapresent a widget event
-typedef struct _DWidgetEvent{
+typedef struct _DWidgetEvent {
     DEventCode EventCode;
     int EventNum;
     void *EventData;
 } DWidgetEvent;
 
 // Rapresent a global event ( a widget event plus widget info)
-typedef struct _DGuiEvent{
+typedef struct _DGuiEvent {
     DWidgetType WidgetType;
     std::string WidgetId; /// @todo deprecare
     uintptr_t WidgetUid;
     DWidgetEvent WidgetEvent;    
 } DGuiEvent;
+
+typedef struct _DPadding {
+    uint8_t Left;
+    uint8_t Right;
+    uint8_t Bottom;
+    uint8_t Top;
+} DPadding;
 
 // Global event callback
 typedef std::function<void (DGuiEvent Event)> OnGuiEventCallback;

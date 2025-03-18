@@ -52,7 +52,8 @@ bool DGuiApp::LoadCanvas(std::string CanvasFilename)
     }
 
     bool Done=true;
-
+    
+    // Load static widgets
     std::vector<DTree> List=Json.ReadArrayTrees(DJsonTree::SEC_STATIC);
     for (auto WidgetTree : List) {
         std::string Type=WidgetTree.ReadString(DJsonTree::ITEM_TYPE,"");
@@ -70,6 +71,7 @@ bool DGuiApp::LoadCanvas(std::string CanvasFilename)
         }
     }
 
+    // Load dinamic widgets
     List=Json.ReadArrayTrees(DJsonTree::SEC_DYNAMIC);
     for (auto WidgetTree : List) {
         std::string Type=WidgetTree.ReadString(DJsonTree::ITEM_TYPE,"");

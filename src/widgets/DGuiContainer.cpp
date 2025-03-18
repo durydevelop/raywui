@@ -53,9 +53,13 @@ void DGuiContainer::FinalizeFromTree(DTools::DTree& WidgetTree)
     // Widgets
     std::vector<DTree> Children=WidgetTree.ReadArrayTrees(DJsonTree::SEC_CHILDREN);
     Log::debug(TAG,"Container %s have %d widgets",Name.c_str(),Children.size());
+    Log::debug(TAG,"Adding...");
     for (auto Child : Children) {
-        AddWidget(&Child);
+        if (!AddWidget(&Child)) {
+            /// @todo fatal exit
+        }
     }
+    Log::debug(TAG,"Added...");
 }
 
 void DGuiContainer::SetOnGuiEvent(OnGuiEventCallback Callback) {
@@ -214,7 +218,7 @@ void DGuiContainer::UpdateCaption(void)
             break;
     }
 
-    Caption.Label->SetBorderVisible(true);
+    //Caption.Label->SetBorderVisible(true);
 }
 
 void DGuiContainer::UnsetCaption(void)

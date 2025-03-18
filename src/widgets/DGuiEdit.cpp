@@ -251,8 +251,37 @@ void DGuiEdit::SetText(std::string NewText, bool ForceAutoSize)
     }
 
     if (ForceAutoSize) {
-        AutoSize();
+        UpdateSize();
     }
+}
+
+void DGuiEdit::UpdateSize(void)
+{
+    // Expand due to the padding and border
+    if (Text.empty()) {
+        return;
+    }
+    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
+    SetWidth(GetTextBounds().width+(TextOffset*2));
+    SetHeight(Properties.TextSize+(TextOffset*2));
+}
+
+Rectangle DGuiEdit::GetTextBounds(void)
+{
+    // Measure text
+    /// @todo UpdateTextWith() when text changes
+    int TextWidth=GetTextWidth(Text,Properties.TextFont,Properties.TextSize);
+    
+    // Calculate text bounds
+    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
+    Rectangle AbsBounds=GetAbsBounds();
+    Rectangle TextBounds;
+    TextBounds.x=AbsBounds.x+TextOffset;
+    TextBounds.y=AbsBounds.y+TextOffset;
+    TextBounds.width=TextWidth;
+    TextBounds.height=Properties.TextSize;
+
+    return TextBounds;
 }
 
 bool DGuiEdit::IsEmpty(void) {

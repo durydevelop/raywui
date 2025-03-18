@@ -22,6 +22,8 @@ class DGuiEdit : public DGuiWidget
         void SetPasswordMode(bool Enabled);
         bool GetPasswordMode(void);
         void SetFocus(void);
+        void UpdateSize(void);
+        Rectangle GetTextBounds(void);
 
         void Draw() override;
         

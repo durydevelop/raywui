@@ -6,6 +6,9 @@ using namespace DTools;
 
 const char TAG[10] = "DGuiLed";
 
+/// @todo: SetPadding()
+/// @todo: SetRadius()
+
 DGuiLed::DGuiLed(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiContainer(std::ref(WidgetTree),ParentWidget,EventCallback)
 {
     InitDefault();
@@ -21,9 +24,11 @@ void DGuiLed::InitDefault(void)
 {
     Radius=Bounds.width/2;
     LedOffset={0,0};
+    LedPadding={0,0,0,0};
     OnColor=ColorToInt(RED);
     OffColor=ColorToInt(GRAY);
     CurrBorderColor=ColorToInt(BLACK);
+    SetSize(Radius*2,Radius*2);
     Off();
 }
 
@@ -32,24 +37,19 @@ void DGuiLed::FinalizeFromTree(DTools::DTree& WidgetTree)
     // ** Read class specific properties **
     Radius=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_RADIUS,10);
 
-    // Position priority:
-    // 1 - Anchor
-    // 2 - Center/Radius
-    // 3 - Standard Bounds
+    LedPadding.Left=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS+DTree::DEFAULT_TRANSLATOR+DJsonTree::ITEM_PADDING,DJsonTree::ITEM_LEFT,0);
+    LedPadding.Right=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS+DTree::DEFAULT_TRANSLATOR+DJsonTree::ITEM_PADDING,DJsonTree::ITEM_RIGHT,0);
+    LedPadding.Bottom=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS+DTree::DEFAULT_TRANSLATOR+DJsonTree::ITEM_PADDING,DJsonTree::ITEM_BOTTOM,0);
+    LedPadding.Top=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS+DTree::DEFAULT_TRANSLATOR+DJsonTree::ITEM_PADDING,DJsonTree::ITEM_TOP,0);
+
     if (Properties.Anchor.AnchorToSide == ANCHOR_NONE) {
         // No anchors defined, use center to set position
         int LedOffsetX=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_CENTER_X,0);
         int LedOffsetY=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_CENTER_Y,0);
         SetPos(LedOffsetX-Radius,LedOffsetX-Radius);
     }
-    /*
-    else {
-        // Anchors defines, only update center
-        Center.x=Bounds.x+Radius;
-        Center.y=Bounds.y+Radius;
-    }
-    */
-    SetSize(Radius*2,Radius*2);
+
+    SetSize((Radius*2)+LedPadding.Left+LedPadding.Right,(Radius*2)+LedPadding.Bottom+LedPadding.Top);
 
     std::string CaptionText=WidgetTree.ReadString(DJsonTree::ITEM_CAPTION,DJsonTree::ITEM_TEXT,"");
     std::string CaptionSideStr=WidgetTree.ReadString(DJsonTree::ITEM_CAPTION,DJsonTree::ITEM_SIDE,"");
@@ -62,24 +62,29 @@ void DGuiLed::FinalizeFromTree(DTools::DTree& WidgetTree)
     OnColor=ColorStringToInt(onc);
     OffColor=ColorStringToInt(offc);
     SwitchedOn=WidgetTree.ReadBool(DJsonTree::ITEM_SWITCHED_ON,false);
-    Set(SwitchedOn);
+    SwitchTo(SwitchedOn);
 }
 
 void DGuiLed::On(void)
 {
-    Set(true);
+    SwitchTo(true);
 }
 
 void DGuiLed::Off(void)
 {
-    Set(false);
+    SwitchTo(false);
 }
 
-void DGuiLed::Set(bool SwitchOn)
+void DGuiLed::SwitchTo(bool SwitchOn)
 {
     SwitchedOn=SwitchOn;
     CurrFilledColor=SwitchedOn ? OnColor : OffColor;
 }
+
+void DGuiLed::Toggle(void) {
+    SwitchTo(!SwitchedOn);
+}
+
 /*
 // Override
 void DGuiLed::SetPos(int LeftPos, int TopPos)
@@ -117,31 +122,10 @@ void DGuiLed::SetCaption(std::string CaptionText, int FontSize, DSide Side, int 
                 break;
         }
     }
+    UpdateParentAligns();
     UpdateAnchor();
 }
-/*
-bool DGuiLed::UpdateAnchor(void)
-{
-    bool ret=DGuiContainer::UpdateAnchor();
 
-    // Move led
-    if (Caption.Label) {
-        // Move led if caption is on the left/top
-        switch (Caption.Side) {
-            case SIDE_LEFT:
-                LedOffset.x=Caption.Label->GetWidth()-Radius;
-                break;
-            case SIDE_TOP:
-                LedOffset.y=Caption.Label->GetHeight()-Radius;
-                break;
-            default:
-                break;
-        }
-    }
-
-    return ret;
-}
-*/
 /**
  * @brief Draw the image.
  * Override method
@@ -153,8 +137,8 @@ void DGuiLed::Draw()
     DGuiContainer::Draw();
 
     Rectangle AbsBounds=GetAbsBounds();
-    int LedX=AbsBounds.x+LedOffset.x+Radius;
-    int LedY=AbsBounds.y+LedOffset.y+Radius;
+    int LedX=AbsBounds.x+LedOffset.x+Radius+LedPadding.Left;
+    int LedY=AbsBounds.y+LedOffset.y+Radius+LedPadding.Top;
     DrawCircle(LedX,LedY,Radius,GetColor(CurrFilledColor));
     DrawCircleLines(LedX,LedY,Radius,GetColor(CurrBorderColor));
 }

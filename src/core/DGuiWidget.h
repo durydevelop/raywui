@@ -59,11 +59,13 @@ class DGuiWidget
         };
 
         inline static const std::map<DAlign,std::string> Aligns = {
-            {ALIGN_RIGHT,   DJsonTree::ITEM_ALIGN_RIGHT     },
-            {ALIGN_LEFT,    DJsonTree::ITEM_ALIGN_LEFT      },
-            {ALIGN_BOTTOM,  DJsonTree::ITEM_ALIGN_BOTTOM    },
-            {ALIGN_TOP,     DJsonTree::ITEM_ALIGN_TOP       },
-            {ALIGN_CENTER,  DJsonTree::ITEM_ALIGN_CENTER    },
+            {ALIGN_RIGHT,   DJsonTree::ITEM_RIGHT   },
+            {ALIGN_LEFT,    DJsonTree::ITEM_LEFT    },
+            {ALIGN_BOTTOM,  DJsonTree::ITEM_BOTTOM  },
+            {ALIGN_TOP,     DJsonTree::ITEM_TOP     },
+            {ALIGN_CENTER,  DJsonTree::ITEM_CENTER  },
+            {ALIGN_HCENTER, DJsonTree::ITEM_HCENTER },
+            {ALIGN_VCENTER, DJsonTree::ITEM_VCENTER }
         };
 
     public:
@@ -82,7 +84,7 @@ class DGuiWidget
         };
 
         struct DProperties {
-            // ** Apparecne **
+            // ** Apparence **
             /// Defaults are set in SetWidgetType()
             unsigned int TextColor;
             int TextPadding;
@@ -95,13 +97,14 @@ class DGuiWidget
             bool BorderVisible; /// Used to override border visible in widgets that does not show it.
             unsigned int LineColor;
             Font TextFont;
-            /// Deprecated std::string AnchorId;
+            DAnchor Anchor;
 
             /// Defauts set here
             // ** Behaviours **
             bool Enabled=true;
             bool Visible=true;
-            DAnchor Anchor;
+            std::map<DAlign,int> ParentAligns; /// Parent aligns,offsets
+            
         }Properties;
         
         DGuiWidget(DWidgetType WidgetType, int LeftPos, int TopPos, int WidgetWidth, int WidgetHeight, DGuiWidget *ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
@@ -115,6 +118,7 @@ class DGuiWidget
 
         /// Virtual method that MUST be implemented by sub-class
         virtual void Draw() = 0;
+        virtual void UpdateSize(void);
         
         /// Virtual methods that CAN be reimplemented
         virtual void SetText(std::string NewText, bool ForceAutoSize = false);
@@ -123,7 +127,6 @@ class DGuiWidget
         virtual DGuiWidget* FindWidgetByName(std::string WidgetName); /// Reimplement if  the sub-class contains widgets (like DGuiContainer)
         virtual void SetPos(int LeftPos, int TopPos);
         virtual void SetSize(int Width, int Height);
-        bool UpdateAnchor(void);
 
         /// Static methods
         static DTools::DTree ExtractDTree(const DTools::fs::path& Filename);
@@ -137,8 +140,9 @@ class DGuiWidget
         static std::string SideToName(DSide Side);
         static DAnchorSide NameToAnchor(const std::string& AnchorSideName);
         static std::string AnchorToName(DAnchorSide AnchorSide);
+        static DAlign NameToAlign(const std::string& AlignName, DAlign Default);
+        static std::string AlignToName(DAlign Align);
         static unsigned int ColorStringToInt(std::string ColorString);
-        int GetTextWidth(std::string TextStr, Font TextFont, float FontSize);
 
         /// Methods
         void Clear(void);
@@ -156,25 +160,26 @@ class DGuiWidget
         void SendEvent(DWidgetEvent WidgetEvent);
         void SetDocking(DDocking DockingPos, int OtherSize);
         void SetDocking(std::string DockingSideName, int OtherSize);
-        void AutoSize(void);
         Rectangle GetTextBounds(void);
         void SetLabel(std::string LabelText, int FontSize, DSide LabelSide, uint SideOffset);
         void SetLabel(std::string LabelText, int FontSize, DSide LabelSide, int OffsetX, int OffsetY);
         
         void UpdateLabel(void);
-/// @todo
-/// void SetDockingSide(DDocking DockingPos, int OtherSize);
-/// void SetDockingSide(std::string DockingSideName, int OtherSize);
+        bool UpdateAnchor(void);
+        void UpdateParentAligns(void);
         void SetBounds(int LeftPos, int TopPos, int Width, int Height);
         void SetBounds(Rectangle WidgetBounds);
         bool SetAnchor(DAnchor Anchor);
         bool SetAnchor(DAnchorSide AnchorSide, DAlign SideAlign, std::string WidgetName, int Offset);
+        void SetParentAligns(std::map<std::string,int> AlignList);
+        void AddParentAlign(std::string AlignName, int AlignOffset,bool ForceUpdate);
         void SetBorderWidth(uint8_t NewWidth);
         void SetBorderVisible(bool Visible);
         void SetEnabled(bool Enabled);
         void SetVisible(bool Visible);
 
         int GetTextSize(void);
+        int GetTextWidth(std::string TextStr, Font TextFont, float FontSize);
         size_t GetWidth(void);
         size_t GetHeight(void);
         Rectangle GetAbsBounds(void);

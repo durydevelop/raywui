@@ -46,17 +46,17 @@ void DGuiStatusBar::FinalizeFromTree(DTools::DTree& WidgetTree)
         if (DockingSide == DJsonTree::VALUE_LEFT) {
             //Log::debug(TAG,"Statusbar item docked to the left");
             Left=DOCK_LEFT;
-            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DGuiWidget::WIDTH_AUTO);
+            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DWidthMode::WIDTH_AUTO);
         }
         else if (DockingSide == DJsonTree::VALUE_RIGHT) {
             //Log::debug(TAG,"Statusbar item docked to the right");
             Left=DOCK_RIGHT;
-            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DGuiWidget::WIDTH_AUTO);
+            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DWidthMode::WIDTH_AUTO);
         }
         else if (DockingSide == DJsonTree::VALUE_CENTER) {
             //Log::debug(TAG,"Statusbar item docked to center");
             Left=DOCK_CENTER;
-            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DGuiWidget::WIDTH_AUTO);
+            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DWidthMode::WIDTH_AUTO);
         }
         else {
             Left=SubItems.ReadInteger(ItemName,DJsonTree::ITEM_LEFT,DOCK_LEFT);
@@ -64,7 +64,7 @@ void DGuiStatusBar::FinalizeFromTree(DTools::DTree& WidgetTree)
                 //Log::warning(TAG,"Left value of %d is not supported, set to 0");
                 Left=0;
             }
-            Width=SubItems.ReadInteger(ItemName,DJsonTree::ITEM_WIDTH,DGuiWidget::WIDTH_AUTO);
+            Width=SubItems.ReadInteger(ItemName,DJsonTree::ITEM_WIDTH,DWidthMode::WIDTH_AUTO);
         }
         // Text
         std::string Text=SubItems.ReadString(ItemName,DJsonTree::ITEM_TEXT,"");
@@ -157,7 +157,7 @@ void DGuiStatusBar::AddItem(std::string ItemName, int LeftPos, int Width, std::s
             break;
     }
 
-    DStatusBarItem Item(Rectangle{LeftPos, 0, (float) Width, Bounds.height},this);
+    DStatusBarItem Item(Rectangle{(float) LeftPos, 0, (float) Width, (float) Bounds.height},this);
     if (!ItemText.empty()) {
         Item.SetText(ItemText.c_str(),false);
     }

@@ -12,7 +12,8 @@ class DGuiLed : public DGuiContainer
 
         void On(void);
         void Off(void);
-        void Set(bool SwitchOn);
+        void SwitchTo(bool SwitchOn);
+        void Toggle(void);
         void SetCenter(int LeftPos, int TopPos);
 
         //void SetPos(int LeftPos, int TopPos) override;
@@ -31,6 +32,7 @@ class DGuiLed : public DGuiContainer
         void FinalizeFromTree(DTools::DTree& WidgetTree);
         
         Vector2 LedOffset;
+        DPadding LedPadding;
         int Radius;
         uint CurrFilledColor;
         uint CurrBorderColor;

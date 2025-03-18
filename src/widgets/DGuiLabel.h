@@ -14,11 +14,13 @@ class DGuiLabel : public DGuiWidget
         explicit DGuiLabel(const DTools::fs::path& LayoutFilename, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
         explicit DGuiLabel(DGuiWidget* ParentWidget);
 
-        void SetPrefix(std::string PrefixText);
-        void SetSuffix(std::string SuffixText);
-        void ClearText(void);
+        void SetPrefix(std::string PrefixText, bool ForceUpdate);
+        void SetSuffix(std::string SuffixText, bool ForceUpdate);
+        void Clear(void);
+        Rectangle GetTextBounds(void);
 
         void Draw() override;
+        void UpdateSize(void) override;
 
     private:
         void InitDefault(void);
