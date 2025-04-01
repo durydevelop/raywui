@@ -14,7 +14,7 @@ DGuiLabel::DGuiLabel(Rectangle WidgetBounds, DGuiWidget *ParentWidget) : DGuiWid
     InitDefault();
 }
 
-DGuiLabel::DGuiLabel(DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(WidgetTree,ParentWidget,EventCallback)
+DGuiLabel::DGuiLabel(DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(std::ref(WidgetTree),ParentWidget,EventCallback)
 {
     InitDefault();
     FinalizeFromTree(WidgetTree);
@@ -23,12 +23,10 @@ DGuiLabel::DGuiLabel(DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCa
 
 DGuiLabel::DGuiLabel(const fs::path& LayoutFilename, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiLabel(std::move(ExtractDTree(LayoutFilename)),ParentWidget,EventCallback)
 {
-    Log::debug(TAG,"LayoutFilename Contructor");
 }
 
 DGuiLabel::DGuiLabel(DGuiWidget* ParentWidget) : DGuiLabel(Rectangle(0,0,0,0),ParentWidget)
 {
-    Log::debug(TAG,"Void Constructor");
 }
 
 void DGuiLabel::InitDefault(void)
@@ -41,27 +39,65 @@ void DGuiLabel::InitDefault(void)
 void DGuiLabel::FinalizeFromTree(DTools::DTree& WidgetTree)
 {
     // ** Read class specific properties **
-    TextPrefix=WidgetTree.ReadString(DJsonTree::ITEM_PREFIX,"");
-    TextSuffix=WidgetTree.ReadString(DJsonTree::ITEM_SUFFIX,"");
+    SetPrefix(WidgetTree.ReadString(DJsonTree::ITEM_PREFIX,""),false);
+    SetSuffix(WidgetTree.ReadString(DJsonTree::ITEM_SUFFIX,""),false);
+    UpdateSize();
 }
 
-void DGuiLabel::SetPrefix(std::string PrefixText) {
+void DGuiLabel::SetPrefix(std::string PrefixText, bool ForceUpdate) {
     if (TextPrefix == PrefixText) {
         return;
     }
     TextPrefix=PrefixText;
-    //Changed=true;
+
+    if (ForceUpdate) {
+        UpdateSize();
+    }
 }
 
-void DGuiLabel::SetSuffix(std::string SuffixText) {
+void DGuiLabel::SetSuffix(std::string SuffixText, bool ForceUpdate) {
     if (TextSuffix == SuffixText) {
         return;
     }
     TextSuffix=SuffixText;
+
+    if (ForceUpdate) {
+        UpdateSize();
+    }
 }
 
-void DGuiLabel::ClearText(void) {
-    DrawRectangle(Bounds.x,Bounds.y,Bounds.width,Bounds.height,GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+void DGuiLabel::UpdateSize(void)
+{
+    // Expand due to the padding and border
+    if (Text.empty()) {
+        return;
+    }
+    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
+    SetWidth(GetTextBounds().width+(TextOffset*2));
+    SetHeight(Properties.TextSize+(TextOffset*2));
+}
+
+Rectangle DGuiLabel::GetTextBounds(void)
+{
+    // Measure text
+    /// @todo UpdateTextWith() when text changes
+    int TextWidth=GetTextWidth(TextPrefix+Text+TextSuffix,Properties.TextFont,Properties.TextSize);
+    
+    // Calculate text bounds
+    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
+    Rectangle AbsBounds=GetAbsBounds();
+    Rectangle TextBounds;
+    TextBounds.x=AbsBounds.x+TextOffset;
+    TextBounds.y=AbsBounds.y+TextOffset;
+    TextBounds.width=TextWidth;
+    TextBounds.height=Properties.TextSize;
+
+    return TextBounds;
+}
+
+void DGuiLabel::Clear(void) {
+    Rectangle AbsBounds=GetAbsBounds();
+    DrawRectangle(AbsBounds.x,AbsBounds.y,AbsBounds.width,AbsBounds.height,GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
 }
 
 /**
@@ -69,8 +105,10 @@ void DGuiLabel::ClearText(void) {
  */
 void DGuiLabel::Draw()
 {
+    Rectangle AbsBounds=GetAbsBounds();
     // Draw background
-    DrawRectangle(Bounds.x,Bounds.y,Bounds.width,Bounds.height,GetColor(Properties.BackGroundColor));
+    DrawRectangle(AbsBounds.x,AbsBounds.y,AbsBounds.width,AbsBounds.height,GetColor(Properties.BackGroundColor));
     // Draw label
-    GuiLabel(Bounds,(TextPrefix+Text+TextSuffix).c_str());
+    //GuiLabel(Bounds,(TextPrefix+Text+TextSuffix).c_str());
+    RayGuiDrawText(TextPrefix+Text+TextSuffix,GetTextBounds(),Properties.TextAlign,GetColor(Properties.TextColor));
 }

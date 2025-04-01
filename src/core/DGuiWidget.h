@@ -31,69 +31,60 @@ class DGuiWidget
             {DIMAGE,        "Image"         },
             {DTOGGLESLIDE,  "ToggleSlide"   },
             {DTOGGLESWITCH, "ToggleSwitch"  },
+            {DLED,          "Led"           },
         };
-        struct DJsonTree {
-            inline static std::string SEC_CHILDREN="Children";
-            inline static const std::string SEC_BOUNDS="Bounds";
-            inline static const std::string SEC_STATUSBAR_ITEMS="StatusBarItems";
 
-            inline static const std::string ITEM_NAME="Name";
-            //inline static const std::string ITEM_ANCHOR_ID="AnchorId";
-            inline static const std::string ITEM_TYPE="Type";
-            inline static const std::string ITEM_TEXT="Text";
-            inline static const std::string ITEM_TEXT_SIZE="TextSize";
-            inline static const std::string ITEM_TEXT_COLOR="TextColor";
-            inline static const std::string ITEM_TEXT_SPACING="TextSpacing";
-            inline static const std::string ITEM_TEXT_PADDING="TextPadding";
-            inline static const std::string ITEM_BORDER_COLOR="BorderColor";
-            inline static const std::string ITEM_BORDER_WIDTH="BorderWidth";
-            inline static const std::string ITEM_BORDER_VISIBLE="BorderVisible";
-            inline static const std::string ITEM_LINE_COLOR="LineColor";
-            inline static const std::string ITEM_BACKGROUND_COLOR="BackgroundColor";
-            inline static const std::string ITEM_TEXT_ALIGN_H="TextAlignH";
-            inline static const std::string ITEM_TEXT_ALIGN_V="TextAlignV";
-            inline static const std::string ITEM_LEFT="Left";
-            inline static const std::string ITEM_TOP="Top";
-            inline static const std::string ITEM_WIDTH="Width";
-            inline static const std::string ITEM_HEIGHT="Height";
-            inline static const std::string ITEM_DOCKING="Docking";
-            inline static const std::string ITEM_SIDE="Side";
-            inline static const std::string ITEM_SIZE="Size";
-            inline static const std::string ITEM_OFFSET="Offset";
-            inline static const std::string ITEM_BOUNDS="Bounds";
-            inline static const std::string ITEM_READ_ONLY="ReadOnly";
-            inline static const std::string ITEM_PASSWORD_MODE="PasswordMode";
-            inline static const std::string ITEM_MAX_TEXT_LENGHT="MaxTextLenght";
-            inline static const std::string ITEM_ENABLED="Enabled";
-            inline static const std::string ITEM_VISIBLE="Visible";
-            inline static const std::string ITEM_SHOW_BORDER="ShowBorder";
-            inline static const std::string ITEM_FILENAME="Filename";
-            inline static const std::string ITEM_ROTATION="Rotation";
-            inline static const std::string ITEM_SCALE="Scale";
-            inline static const std::string ITEM_LABEL="Label";
-            inline static const std::string ITEM_PREFIX="Prefix";
-            inline static const std::string ITEM_SUFFIX="Suffix";
+        inline static const std::map<DDocking,std::string> Dockings = {
+            {DOCK_LEFT,     DJsonTree::VALUE_LEFT       },
+            {DOCK_RIGHT,    DJsonTree::VALUE_RIGHT      },
+            {DOCK_BOTTOM,   DJsonTree::VALUE_BOTTOM     },
+            {DOCK_TOP,      DJsonTree::VALUE_TOP        },
+            {DOCK_CENTER,   DJsonTree::VALUE_CENTER     },
+            {DOCK_HCENTER,  DJsonTree::VALUE_HCENTER    },
+            {DOCK_VCENTER,  DJsonTree::VALUE_VCENTER    },
+        };
 
-            inline static const std::string VALUE_BOTTOM="Bottom";
-            inline static const std::string VALUE_TOP="Top";
-            inline static const std::string VALUE_LEFT="Left";
-            inline static const std::string VALUE_RIGHT="Right";
-            inline static const std::string VALUE_CENTER="Center";
+        inline static const std::map<DSide,std::string> Sides = {
+            {SIDE_LEFT,     DJsonTree::VALUE_LEFT   },
+            {SIDE_RIGHT,    DJsonTree::VALUE_RIGHT  },
+            {SIDE_BOTTOM,   DJsonTree::VALUE_BOTTOM },
+            {SIDE_TOP,      DJsonTree::VALUE_TOP    },
+        };
+
+        inline static const std::map<DAnchorSide,std::string> AnchorSides = {
+            {ANCHOR_RIGHT_OF,   DJsonTree::ITEM_RIGHT_OF    },
+            {ANCHOR_LEFT_OF,    DJsonTree::ITEM_LEFT_OF    },
+            {ANCHOR_BOTTOM_OF,  DJsonTree::ITEM_BOTTOM_OF    },
+            {ANCHOR_TOP_OF,     DJsonTree::ITEM_TOP_OF    },
+        };
+
+        inline static const std::map<DAlign,std::string> Aligns = {
+            {ALIGN_RIGHT,   DJsonTree::ITEM_RIGHT   },
+            {ALIGN_LEFT,    DJsonTree::ITEM_LEFT    },
+            {ALIGN_BOTTOM,  DJsonTree::ITEM_BOTTOM  },
+            {ALIGN_TOP,     DJsonTree::ITEM_TOP     },
+            {ALIGN_CENTER,  DJsonTree::ITEM_CENTER  },
+            {ALIGN_HCENTER, DJsonTree::ITEM_HCENTER },
+            {ALIGN_VCENTER, DJsonTree::ITEM_VCENTER }
         };
 
     public:
-        enum DDocking { DOCK_HCENTER=-7, DOCK_VCENTER=-6, DOCK_CENTER=-5, DOCK_TOP=-4, DOCK_BOTTOM=-3, DOCK_RIGHT=-2, DOCK_LEFT=-1 };
-        enum DWidth { WIDTH_AUTO=-1 };
-        enum DTextAlignH { TEXT_ALIGN_HLEFT=TEXT_ALIGN_LEFT, TEXT_ALIGN_HCENTER=TEXT_ALIGN_CENTER, TEXT_ALIGN_HRIGHT=TEXT_ALIGN_RIGHT };
-        enum DTextAlignV { TEXT_ALIGN_VTOP=TEXT_ALIGN_TOP, TEXT_ALIGN_VCENTER=TEXT_ALIGN_CENTER, TEXT_ALIGN_VBOTTOM=TEXT_ALIGN_BOTTOM };
-        typedef struct DTextAlign{
-            DTextAlignH Horiz=TEXT_ALIGN_HLEFT;
-            DTextAlignV Vert=TEXT_ALIGN_VCENTER;
-        } DTextAlign;
-        // Gui control property style color element
+        typedef struct DAnchor{
+            DAnchorSide AnchorToSide;
+            DAlign AlignToSide;
+            std::string WidgetName;
+            int AnchorOffset;
+        } DAnchor;
+
+        struct DLabel{
+            DGuiWidget *Widget=nullptr;
+            DSide Side=SIDE_LEFT;
+            int OffsetX=5;
+            int OffsetY=5;
+        };
 
         struct DProperties {
-            // ** Apparecne **
+            // ** Apparence **
             /// Defaults are set in SetWidgetType()
             unsigned int TextColor;
             int TextPadding;
@@ -105,32 +96,37 @@ class DGuiWidget
             int BorderWidth;
             bool BorderVisible; /// Used to override border visible in widgets that does not show it.
             unsigned int LineColor;
-            /// @todo Font TextFont;
-            /// Deprecated std::string AnchorId;
+            Font TextFont;
+            DAnchor Anchor;
 
             /// Defauts set here
-            DDocking LabelSide=DOCK_LEFT;
-            int LabelOffset=5;
             // ** Behaviours **
             bool Enabled=true;
             bool Visible=true;
+            std::map<DAlign,int> ParentAligns; /// Parent aligns,offsets
+            
         }Properties;
         
         DGuiWidget(DWidgetType WidgetType, int LeftPos, int TopPos, int WidgetWidth, int WidgetHeight, DGuiWidget *ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
         DGuiWidget(DWidgetType WidgetType, Rectangle WidgetBounds, DGuiWidget *ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
         DGuiWidget(DWidgetType WidgetType, DDocking DockingPos, int OtherSize, DGuiWidget *ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
-        DGuiWidget(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
+        DGuiWidget(DTools::DTree& WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
+        virtual ~DGuiWidget();
         
         static DGuiWidget* New(DTools::DTree& WidgetTree, DGuiWidget* ParentWidget = nullptr, OnWidgetEventCallback EventCallback = nullptr);
         static DGuiWidget* New(const std::string& LayoutFilename, DGuiWidget* ParentWidget = nullptr, OnWidgetEventCallback EventCallback = nullptr);
 
         /// Virtual method that MUST be implemented by sub-class
         virtual void Draw() = 0;
+        virtual void UpdateSize(void);
         
         /// Virtual methods that CAN be reimplemented
         virtual void SetText(std::string NewText, bool ForceAutoSize = false);
         virtual const std::string& GetText(void);
         virtual void SetOnGuiEvent(OnGuiEventCallback Callback);
+        virtual DGuiWidget* FindWidgetByName(std::string WidgetName); /// Reimplement if  the sub-class contains widgets (like DGuiContainer)
+        virtual void SetPos(int LeftPos, int TopPos);
+        virtual void SetSize(int Width, int Height);
 
         /// Static methods
         static DTools::DTree ExtractDTree(const DTools::fs::path& Filename);
@@ -138,43 +134,55 @@ class DGuiWidget
         static DRglControl DecodeRglLine(std::string Line);
         static DWidgetType NameToType(const std::string& WidgetTypeName);
         static std::string TypeToName(DWidgetType WidgetType);
-        static DDocking NameToDocking(std::string SideName, DDocking Default);
+        static DDocking NameToDocking(const std::string& DockingSideName, DDocking Default);
+        static std::string DockingToName(DDocking DockingPos);
+        static DSide NameToSide(const std::string& SideName, DSide Default);
+        static std::string SideToName(DSide Side);
+        static DAnchorSide NameToAnchor(const std::string& AnchorSideName);
+        static std::string AnchorToName(DAnchorSide AnchorSide);
+        static DAlign NameToAlign(const std::string& AlignName, DAlign Default);
+        static std::string AlignToName(DAlign Align);
         static unsigned int ColorStringToInt(std::string ColorString);
-        static int GetTextWidth(std::string TextStr, Font TextFont, float FontSize);
 
+        /// Methods
         void Clear(void);
         void Draws(void);
 
         void SetWidgetType(DWidgetType WidgetType);
         void SetTextSize(int NewSize, bool ForceAutoSize);
         void SetTextSpacing(int NewSpacing, bool ForceAutoSize);
-        void SetTextPadding(int NewPadding);
+        void SetTextPadding(int NewPadding, bool ForceAutoSize);
         void SetWidth(int Width);
         void SetHeight(int Height);
         void SetParent(DGuiWidget *Parent);
         void SetTextAlign(std::string AlignHoriz, std::string AlignVert);
         void SetOnWidgetEvent(OnWidgetEventCallback Callback);
         void SendEvent(DWidgetEvent WidgetEvent);
-        void SetPos(int LeftPos, int TopPos);
-        void SetSize(int Width, int Height);
         void SetDocking(DDocking DockingPos, int OtherSize);
         void SetDocking(std::string DockingSideName, int OtherSize);
-        void SetLabel(std::string LabelText, int FontSize, DDocking LabelSide, int LabelOffset);
-        void AutoSize(void);
+        Rectangle GetTextBounds(void);
+        void SetLabel(std::string LabelText, int FontSize, DSide LabelSide, uint SideOffset);
+        void SetLabel(std::string LabelText, int FontSize, DSide LabelSide, int OffsetX, int OffsetY);
+        
         void UpdateLabel(void);
-/// @todo
-/// void SetDockingSide(DDocking DockingPos, int OtherSize);
-/// void SetDockingSide(std::string DockingSideName, int OtherSize);
+        bool UpdateAnchor(void);
+        void UpdateParentAligns(void);
         void SetBounds(int LeftPos, int TopPos, int Width, int Height);
         void SetBounds(Rectangle WidgetBounds);
+        bool SetAnchor(DAnchor Anchor);
+        bool SetAnchor(DAnchorSide AnchorSide, DAlign SideAlign, std::string WidgetName, int Offset);
+        void SetParentAligns(std::map<std::string,int> AlignList);
+        void AddParentAlign(std::string AlignName, int AlignOffset,bool ForceUpdate);
         void SetBorderWidth(uint8_t NewWidth);
         void SetBorderVisible(bool Visible);
         void SetEnabled(bool Enabled);
         void SetVisible(bool Visible);
 
         int GetTextSize(void);
+        int GetTextWidth(std::string TextStr, Font TextFont, float FontSize);
         size_t GetWidth(void);
         size_t GetHeight(void);
+        Rectangle GetAbsBounds(void);
         DGuiWidget* GetParent(void);
         DWidgetType GetWidgetType(void);
         std::string GetWidgetTypeName(void);
@@ -187,13 +195,17 @@ class DGuiWidget
         int GetGuiTextBoxCursorIndex(void);
         void SetGuiTextBoxCursorIndex(int cursorIndex);
         bool IsGuiLocked(void);
-        void RayGuiDrawRectangle(Rectangle rec, int borderWidth, Color borderColor, Color color);
-        void RayGuiDrawText(const char *text, Rectangle textBounds, int alignment, Color tint);
         float GetGuiAlpha(void);
+
+        void RayGuiDrawRectangle(Rectangle Bounds, int BorderWidth, Color BorderColor, Color Tint);
+        void RayGuiDrawText(const char *TextStr, Rectangle TextBounds, int Alignment, Color Tint);
+        void RayGuiDrawText(std::string TextStr, Rectangle TextBounds, DTextAlign alignment, Color tint);
 
         std::string Name;
         Rectangle Bounds;
         std::string Text;
+        //Rectangle TextBounds;
+        uintptr_t Uid;
 
     protected:
         int DEFAULT_SIDE_SIZE=20;   //! Used for set docking position, will be overrided by widget subclass
@@ -202,7 +214,7 @@ class DGuiWidget
 
         DWidgetType Type;
         DGuiWidget *Parent=nullptr;
-        DGuiWidget *Label=nullptr;
+        DLabel Label;
         
         OnGuiEventCallback OnGuiEvent;
         OnWidgetEventCallback OnWidgetEvent;

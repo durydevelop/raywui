@@ -21,6 +21,9 @@ class DGuiEdit : public DGuiWidget
         bool GetReadOnly(void);
         void SetPasswordMode(bool Enabled);
         bool GetPasswordMode(void);
+        void SetFocus(void);
+        void UpdateSize(void);
+        Rectangle GetTextBounds(void);
 
         void Draw() override;
         
@@ -38,12 +41,13 @@ class DGuiEdit : public DGuiWidget
         size_t MaxTextLenght;   /// Max lenght of edit text
         bool ReadOnly;          /// Read-only mode
         bool PasswordMode;      /// When true viewBuff is masked with '*'.
-        char *viewBuff;         /// Buffer used for ui, if PasswordMode is false it is used also for realtext.
-        char *hideBuff;         /// In password mode used to store text.
-        int textBoxShadowCursorIndex;  /// In password mode used to keep trace of current cursor position.
+        char *ViewBuff;         /// Buffer used for ui, if PasswordMode is false it is used also for realtext.
+        char *HideBuff;         /// In password mode used to store text.
+        int TextBoxShadowCursorIndex;  /// In password mode used to keep trace of current cursor position.
         bool EditMode;
+        //DWidgetEvent ResultEvent;
 
-        //int DrawTextBox(Rectangle bounds, int bufferSize, bool editMode);
+        //bool DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode, DWidgetEvent& EventData);
 };
 
 #endif

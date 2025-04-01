@@ -2,7 +2,7 @@
 //#define RAYGUI_IMPLEMENTATION
 //#include <raygui.h>
 #include "raywui_log.h"
-#include <DGuiContainer.h>
+//#include <DGuiContainer.h>
 #include <dpplib/DPreferences.h>
 
 const char TAG[14]="DGuiStatusBar";
@@ -19,7 +19,7 @@ DGuiStatusBar::DGuiStatusBar(DDocking DockingPos, int OtherSize, DGuiWidget *Par
 {
 }
 
-DGuiStatusBar::DGuiStatusBar(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(WidgetTree,ParentWidget,EventCallback)
+DGuiStatusBar::DGuiStatusBar(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(std::ref(WidgetTree),ParentWidget,EventCallback)
 {
     FinalizeFromTree(WidgetTree);
     Ready=(Type == DSTATUSBAR);
@@ -34,7 +34,7 @@ void DGuiStatusBar::FinalizeFromTree(DTools::DTree& WidgetTree)
 {
     // ** Read class specific properties **
     // StatusBar items        
-    DTools::DTree SubItems=WidgetTree.GetTree(DJsonTree::SEC_STATUSBAR_ITEMS);
+    DTools::DTree SubItems=WidgetTree.GetTree(DJsonTree::SEC_ITEMS);
     std::vector<std::string> Items;
     SubItems.ReadNames(Items);
     Log::debug(TAG,"StatusBar have %d items",Items.size());
@@ -45,26 +45,26 @@ void DGuiStatusBar::FinalizeFromTree(DTools::DTree& WidgetTree)
         std::string DockingSide=SubItems.ReadString(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIDE,"");
         if (DockingSide == DJsonTree::VALUE_LEFT) {
             //Log::debug(TAG,"Statusbar item docked to the left");
-            Left=DGuiWidget::DOCK_LEFT;
-            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DGuiWidget::WIDTH_AUTO);
+            Left=DOCK_LEFT;
+            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DWidthMode::WIDTH_AUTO);
         }
         else if (DockingSide == DJsonTree::VALUE_RIGHT) {
             //Log::debug(TAG,"Statusbar item docked to the right");
-            Left=DGuiWidget::DOCK_RIGHT;
-            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DGuiWidget::WIDTH_AUTO);
+            Left=DOCK_RIGHT;
+            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DWidthMode::WIDTH_AUTO);
         }
         else if (DockingSide == DJsonTree::VALUE_CENTER) {
             //Log::debug(TAG,"Statusbar item docked to center");
-            Left=DGuiWidget::DOCK_CENTER;
-            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DGuiWidget::WIDTH_AUTO);
+            Left=DOCK_CENTER;
+            Width=SubItems.ReadInteger(ItemName+"."+DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,DWidthMode::WIDTH_AUTO);
         }
         else {
-            Left=SubItems.ReadInteger(ItemName,DJsonTree::ITEM_LEFT,DGuiWidget::DOCK_LEFT);
-            if (Left < DGuiWidget::DOCK_CENTER) {
+            Left=SubItems.ReadInteger(ItemName,DJsonTree::ITEM_LEFT,DOCK_LEFT);
+            if (Left < DOCK_CENTER) {
                 //Log::warning(TAG,"Left value of %d is not supported, set to 0");
                 Left=0;
             }
-            Width=SubItems.ReadInteger(ItemName,DJsonTree::ITEM_WIDTH,DGuiWidget::WIDTH_AUTO);
+            Width=SubItems.ReadInteger(ItemName,DJsonTree::ITEM_WIDTH,DWidthMode::WIDTH_AUTO);
         }
         // Text
         std::string Text=SubItems.ReadString(ItemName,DJsonTree::ITEM_TEXT,"");
@@ -130,11 +130,10 @@ void DGuiStatusBar::SetParent(DGuiWidget *ParentContainer) {
  * @param ItemText 
  */
 void DGuiStatusBar::AddItem(std::string ItemName, int LeftPos, int Width, std::string ItemText) {
-    if (Width == WIDTH_AUTO) {
+    if (Width == DWidthMode::WIDTH_AUTO) {
         // Auto width
-        Width=MeasureText(ItemText.c_str(),Properties.TextSize);
-        //Width=(ItemText.size()*Properties.TextSize); //+((ItemText.size()-1)*Properties.TextSpacing);
-        if (Width == 0) {
+        Width=GetTextWidth(ItemText.c_str(),Properties.TextFont,Properties.TextSize);
+        if (Width == DWidthMode::WIDTH_DEFAULT) {
             // Default width
             Width=100;
         }
@@ -149,7 +148,7 @@ void DGuiStatusBar::AddItem(std::string ItemName, int LeftPos, int Width, std::s
             LeftPos=0;
             break;
         case DOCK_RIGHT:
-            LeftPos=Bounds.x+Bounds.width-Width;
+            LeftPos=Bounds.width-Width;
             break;
         case DOCK_CENTER:
             LeftPos=(Bounds.width/2)-(Width/2);
@@ -158,13 +157,13 @@ void DGuiStatusBar::AddItem(std::string ItemName, int LeftPos, int Width, std::s
             break;
     }
 
-    DStatusBarItem Item(Rectangle{Bounds.x+LeftPos, Bounds.y, (float) Width, Bounds.height},this);
+    DStatusBarItem Item(Rectangle{(float) LeftPos, 0, (float) Width, (float) Bounds.height},this);
     if (!ItemText.empty()) {
         Item.SetText(ItemText.c_str(),false);
     }
     Item.Properties.TextSize=Properties.TextSize;
     Item.Properties.TextSpacing=Properties.TextSpacing;
-    Item.Properties.TextPadding=2;
+    Item.Properties.TextPadding=5;
     Items.emplace(ItemName,std::move(Item));
 }
 
@@ -188,10 +187,13 @@ void DGuiStatusBar::SetItemText(std::string ItemName, std::string ItemText) {
  */
 void DGuiStatusBar::Draw()
 {
-    GuiStatusBar(Bounds, "");
+    Rectangle AbsBounds=GetAbsBounds();
+    GuiStatusBar(AbsBounds, "");
     for (auto [Name,Item] : Items) {
         Item.Draws();
-        DrawLineEx(Vector2{Item.Bounds.x,Item.Bounds.y},Vector2{Item.Bounds.x,Item.Bounds.y+Item.Bounds.height},Properties.BorderWidth,GetColor(Properties.BorderColor));
-        DrawLineEx(Vector2{Item.Bounds.x+Item.Bounds.width,Item.Bounds.y},Vector2{Item.Bounds.x+Item.Bounds.width,Item.Bounds.y+Item.Bounds.height},Properties.BorderWidth,GetColor(Properties.BorderColor));
+        // Vertical line separators
+        Rectangle ItemBounds=Item.GetAbsBounds();
+        DrawLineEx(Vector2{ItemBounds.x,ItemBounds.y},Vector2{ItemBounds.x,ItemBounds.y+ItemBounds.height},Properties.BorderWidth,GetColor(Properties.BorderColor));
+        DrawLineEx(Vector2{ItemBounds.x+ItemBounds.width,ItemBounds.y},Vector2{ItemBounds.x+ItemBounds.width,ItemBounds.y+ItemBounds.height},Properties.BorderWidth,GetColor(Properties.BorderColor));
     }
 }

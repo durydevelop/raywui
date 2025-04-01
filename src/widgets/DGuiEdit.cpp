@@ -7,17 +7,21 @@
 
 #define DEFAULT_MAX_TEXT_LENGHT 128
 
+//bool DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode, DWidgetEvent& EventData);
+
 const char TAG[9]="DGuiEdit";
 
-DGuiEdit::DGuiEdit(int LeftPos, int TopPos, int WidgetWidth, int WidgetHeight, DGuiWidget *ParentWidget) : DGuiWidget(DEDIT,LeftPos,TopPos,WidgetWidth,WidgetHeight,ParentWidget) {
+DGuiEdit::DGuiEdit(int LeftPos, int TopPos, int WidgetWidth, int WidgetHeight, DGuiWidget *ParentWidget) : DGuiWidget(DEDIT,LeftPos,TopPos,WidgetWidth,WidgetHeight,ParentWidget)
+{
     InitDefault();
 }
 
-DGuiEdit::DGuiEdit(Rectangle WidgetBounds, DGuiWidget *ParentWidget) : DGuiWidget(DEDIT,WidgetBounds,ParentWidget) {
+DGuiEdit::DGuiEdit(Rectangle WidgetBounds, DGuiWidget *ParentWidget) : DGuiWidget(DEDIT,WidgetBounds,ParentWidget)
+{
     InitDefault();
 }
 
-DGuiEdit::DGuiEdit(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(WidgetTree,ParentWidget,EventCallback)
+DGuiEdit::DGuiEdit(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(std::ref(WidgetTree),ParentWidget,EventCallback)
 {
     InitDefault();
     FinalizeFromTree(WidgetTree);
@@ -31,9 +35,9 @@ DGuiEdit::DGuiEdit(const std::string& LayoutFilename, DGuiWidget* ParentWidget, 
 DGuiEdit::~DGuiEdit()
 {
     Log::debug(TAG,"~DGuiEdit() %s",Name.c_str());
-    delete viewBuff;
-    if (hideBuff) {
-        delete hideBuff;
+    delete ViewBuff;
+    if (HideBuff) {
+        delete HideBuff;
     }
 }
 
@@ -43,10 +47,10 @@ void DGuiEdit::InitDefault(void)
     ReadOnly=false;
     PasswordMode=false;
     MaxTextLenght=DEFAULT_MAX_TEXT_LENGHT;
-    viewBuff=new char[MaxTextLenght+1];
-    memset(viewBuff,'\0',MaxTextLenght+1);
-    hideBuff=nullptr;
-    textBoxShadowCursorIndex=0;
+    ViewBuff=new char[MaxTextLenght+1];
+    memset(ViewBuff,'\0',MaxTextLenght+1);
+    HideBuff=nullptr;
+    TextBoxShadowCursorIndex=0;
     DEFAULT_SIDE_SIZE=50;
     DEFAULT_WIDTH=50;
     DEFAULT_HEIGHT=20;
@@ -71,7 +75,8 @@ void DGuiEdit::FinalizeFromTree(DTools::DTree& WidgetTree)
  * 
  * @param Lenght    ->  New max text lenght size. If set to 0, default value is assigned.
  */
-void DGuiEdit::SetMaxTextLenght(size_t NewLenght) {
+void DGuiEdit::SetMaxTextLenght(size_t NewLenght)
+{
     if ((NewLenght == 0)) {
         NewLenght=DEFAULT_MAX_TEXT_LENGHT;
     }
@@ -83,114 +88,126 @@ void DGuiEdit::SetMaxTextLenght(size_t NewLenght) {
     MaxTextLenght=NewLenght;
 
     if (PasswordMode) {
-        // In password mode real text buffer is hideBuff
+        // In password mode real text buffer is HideBuff
         // Store
-        Text.assign(hideBuff);
+        Text.assign(HideBuff);
         // reallocate buffer
-        if (hideBuff) {
-            delete hideBuff;
+        if (HideBuff) {
+            delete HideBuff;
         }
-        hideBuff=new char[MaxTextLenght+1];
-        memset(hideBuff,'\0',MaxTextLenght+1);
+        HideBuff=new char[MaxTextLenght+1];
+        memset(HideBuff,'\0',MaxTextLenght+1);
         // re-assign
-        strcpy(hideBuff,Text.c_str());
+        strcpy(HideBuff,Text.c_str());
 
-        // viewBuff is used for masked view
-        delete viewBuff;
-        viewBuff=new char[MaxTextLenght+1];
-        memset(viewBuff,'\0',MaxTextLenght+1);
+        // ViewBuff is used for masked view
+        delete ViewBuff;
+        ViewBuff=new char[MaxTextLenght+1];
+        memset(ViewBuff,'\0',MaxTextLenght+1);
     }
     else {
-        // NO password mode (only viewBuff is used)
+        // NO password mode (only ViewBuff is used)
         // Store
-        Text.assign(viewBuff);
+        Text.assign(ViewBuff);
         // reallocate buffer
-        delete viewBuff;
-        viewBuff=new char[MaxTextLenght+1];
-        memset(viewBuff,'\0',MaxTextLenght+1);
+        delete ViewBuff;
+        ViewBuff=new char[MaxTextLenght+1];
+        memset(ViewBuff,'\0',MaxTextLenght+1);
         // re-assign
-        strcpy(viewBuff,Text.c_str());
+        strcpy(ViewBuff,Text.c_str());
     }
 }
 
-size_t DGuiEdit::GetMaxTextLenght(void) {
+size_t DGuiEdit::GetMaxTextLenght(void)
+{
     return MaxTextLenght;
 }
 
-void DGuiEdit::SetReadOnly(bool Enabled) {
+void DGuiEdit::SetReadOnly(bool Enabled)
+{
     ReadOnly=Enabled;
 }
 
-bool DGuiEdit::GetReadOnly(void) {
+bool DGuiEdit::GetReadOnly(void)
+{
     return ReadOnly;
 }
 
-void DGuiEdit::SetPasswordMode(bool Enabled) {
+void DGuiEdit::SetPasswordMode(bool Enabled)
+{
     if (PasswordMode == Enabled) {
         return;
     }
 
     if (Enabled) {
         // From disable to enable
-        if (hideBuff) {
+        if (HideBuff) {
             // to be sure...
-            delete hideBuff;
+            delete HideBuff;
         }
-        hideBuff=new char[MaxTextLenght+1];
-        // Copy real text in hideBuff
-        strcpy(hideBuff,viewBuff);
+        HideBuff=new char[MaxTextLenght+1];
+        // Copy real text in HideBuff
+        strcpy(HideBuff,ViewBuff);
         // set cursor index
-        textBoxShadowCursorIndex=GetGuiTextBoxCursorIndex();
-        // Set viewBuff with '*'
-        memset(viewBuff,'*',strlen(hideBuff));
-        // Ri-calculate index position in viewBuff
+        TextBoxShadowCursorIndex=GetGuiTextBoxCursorIndex();
+        // Set ViewBuff with '*'
+        memset(ViewBuff,'*',strlen(HideBuff));
+        // Ri-calculate index position in ViewBuff
         int prevCodepointSize = 0;
         int index=0;
         // Move backward text from cursor position
-        for (int i = (textBoxShadowCursorIndex - prevCodepointSize); i < strlen(hideBuff); i++) {
-            GetCodepointPrevious(hideBuff + textBoxShadowCursorIndex, &prevCodepointSize);
+        for (int i = (TextBoxShadowCursorIndex - prevCodepointSize); i < strlen(HideBuff); i++) {
+            GetCodepointPrevious(HideBuff + TextBoxShadowCursorIndex, &prevCodepointSize);
             index++;
         }
         SetGuiTextBoxCursorIndex(index);
     }
     else {
         // From enable to disable
-        if (hideBuff) { //...to be sure
-            // Copy real text in viewBuff
-            strcpy(viewBuff,hideBuff);
+        if (HideBuff) { //...to be sure
+            // Copy real text in ViewBuff
+            strcpy(ViewBuff,HideBuff);
             // delete highBuff
-            delete hideBuff;
+            delete HideBuff;
         }
-        hideBuff=nullptr;
-        SetGuiTextBoxCursorIndex(textBoxShadowCursorIndex);
-        textBoxShadowCursorIndex=0;
+        HideBuff=nullptr;
+        SetGuiTextBoxCursorIndex(TextBoxShadowCursorIndex);
+        TextBoxShadowCursorIndex=0;
     }
 
     PasswordMode=Enabled;
 }
 
-bool DGuiEdit::GetPasswordMode(void) {
+bool DGuiEdit::GetPasswordMode(void)
+{
     return PasswordMode;
 }
 
-void DGuiEdit::ClearText(void) {
-    //strcpy(viewBuff,"");
-    memset(viewBuff,'\0',MaxTextLenght+1);
-    if (hideBuff) {
-        memset(hideBuff,'\0',MaxTextLenght+1);
-        textBoxShadowCursorIndex=0;
+void DGuiEdit::SetFocus(void)
+{
+    EditMode=true;
+}
+
+void DGuiEdit::ClearText(void)
+{
+    //strcpy(ViewBuff,"");
+    memset(ViewBuff,'\0',MaxTextLenght+1);
+    if (HideBuff) {
+        memset(HideBuff,'\0',MaxTextLenght+1);
+        TextBoxShadowCursorIndex=0;
     }
     Text.clear();
 }
 
-const std::string& DGuiEdit::GetText(void) {
-    if (hideBuff) {
+const std::string& DGuiEdit::GetText(void)
+{
+    if (HideBuff) {
         // Password mode
-        Text.assign(hideBuff);    
+        Text.assign(HideBuff);    
     }
     else {
         // Normal mode
-        Text.assign(viewBuff);
+        Text.assign(ViewBuff);
     }
     
     return Text;
@@ -202,66 +219,102 @@ const std::string& DGuiEdit::GetText(void) {
  * @return char* 
  */
 char* DGuiEdit::GetTextPtr(void) {
-    if (hideBuff) {
+    if (HideBuff) {
         // Password mode
-        return hideBuff;
+        return HideBuff;
     }
     else {
         // Normal mode
-        return viewBuff;
+        return ViewBuff;
     }
 }
 
-void DGuiEdit::SetText(std::string NewText, bool ForceAutoSize) {
-    if (hideBuff) {
+void DGuiEdit::SetText(std::string NewText, bool ForceAutoSize)
+{
+    if (HideBuff) {
         // Password mode
-        if (strcmp(hideBuff,NewText.c_str()) == 0) {
+        if (strcmp(HideBuff,NewText.c_str()) == 0) {
             // Same
             return;
         }
-        strcpy(hideBuff,NewText.c_str());
-        Text.assign(hideBuff);
+        strcpy(HideBuff,NewText.c_str());
+        Text.assign(HideBuff);
     }
     else {
         // NormalMode
-        if (strcmp(viewBuff,NewText.c_str()) == 0) {
+        if (strcmp(ViewBuff,NewText.c_str()) == 0) {
             // Same
             return;
         }
-        strcpy(viewBuff,NewText.c_str());
-        Text.assign(viewBuff);
+        strcpy(ViewBuff,NewText.c_str());
+        Text.assign(ViewBuff);
     }
 
     if (ForceAutoSize) {
-        AutoSize();
+        UpdateSize();
     }
 }
 
+void DGuiEdit::UpdateSize(void)
+{
+    // Expand due to the padding and border
+    if (Text.empty()) {
+        return;
+    }
+    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
+    SetWidth(GetTextBounds().width+(TextOffset*2));
+    SetHeight(Properties.TextSize+(TextOffset*2));
+}
+
+Rectangle DGuiEdit::GetTextBounds(void)
+{
+    // Measure text
+    /// @todo UpdateTextWith() when text changes
+    int TextWidth=GetTextWidth(Text,Properties.TextFont,Properties.TextSize);
+    
+    // Calculate text bounds
+    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
+    Rectangle AbsBounds=GetAbsBounds();
+    Rectangle TextBounds;
+    TextBounds.x=AbsBounds.x+TextOffset;
+    TextBounds.y=AbsBounds.y+TextOffset;
+    TextBounds.width=TextWidth;
+    TextBounds.height=Properties.TextSize;
+
+    return TextBounds;
+}
+
 bool DGuiEdit::IsEmpty(void) {
-    if (hideBuff) {
+    if (HideBuff) {
         // Password mode
-        return (strlen(hideBuff) == 0);
+        return (strlen(HideBuff) == 0);
     }
     else {
         // Normal mode
-        return (strlen(viewBuff) == 0);
+        return (strlen(ViewBuff) == 0);
     }
 }
 
 /**
- * @brief Draw the label.
- * Label is a static widget, so should be drawn only if something changes.
+ * @brief Draw the Edit TextBox.
  */
-
 void DGuiEdit::Draw()
 {
     bool CurrReadOnly=GuiGetStyle(Type,TEXT_READONLY);
     GuiSetStyle(Type,TEXT_READONLY,ReadOnly);
 
-    if (GuiTextBoxMasked(Bounds,viewBuff,hideBuff,MaxTextLenght,EditMode)) {
+    int eventData;
+    int ret=GuiTextBoxMasked(GetAbsBounds(),ViewBuff,HideBuff,MaxTextLenght,EditMode);
+    if (ret) {
         if (EditMode) {
-            DWidgetEvent Event={DEventCode::EDIT_END, nullptr};
-            SendEvent(Event);
+            /// @todo switch case
+            if (ret == EDIT_END) {
+                SendEvent(DWidgetEvent({EDIT_END,0}));
+                
+            }
+            else if (ret == KEY_ENTER_PRESSED) {
+                SendEvent(DWidgetEvent({KEY_PRESSED,KEY_ENTER}));
+            }
         }
         EditMode=!EditMode;
     }
@@ -271,7 +324,7 @@ void DGuiEdit::Draw()
 /*
 // Text Box control with mask text (current raygui.h my implementation)
 // NOTE: Returns true on ENTER pressed (useful for data validation)
-int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode)
+bool DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode, DWidgetEvent& EditEvent)
 {
     #if !defined(RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN)
         #define RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN  40        // Frames to wait for autocursor movement
@@ -280,7 +333,7 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
         #define RAYGUI_TEXTBOX_AUTO_CURSOR_DELAY      1        // Frames delay for autocursor movement
     #endif
 
-    int result = 0;
+    bool ret=false;
     GuiState state = guiState;
 
     bool multiline = false;     // TODO: Consider multiline text input
@@ -358,7 +411,7 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
             if (textBoxCursorIndex > textLength)
             {
                 textBoxCursorIndex = textLength;
-                textBoxShadowCursorIndex = shadowBuff ? shadowLength : 0;
+                TextBoxShadowCursorIndex = shadowBuff ? shadowLength : 0;
             }
 
             // Encode codepobbint as UTF-8
@@ -387,12 +440,12 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
                 {
                     // ** shadowBuff **
                     // Move forward data from cursor position
-                    for (int i = (shadowLength + codepointSize); i > textBoxShadowCursorIndex; i--) shadowBuff[i] = shadowBuff[i - codepointSize];
+                    for (int i = (shadowLength + codepointSize); i > TextBoxShadowCursorIndex; i--) shadowBuff[i] = shadowBuff[i - codepointSize];
 
                     // Add new codepoint in current cursor position
-                    for (int i = 0; i < codepointSize; i++) shadowBuff[textBoxShadowCursorIndex + i] = charEncoded[i];
+                    for (int i = 0; i < codepointSize; i++) shadowBuff[TextBoxShadowCursorIndex + i] = charEncoded[i];
 
-                    textBoxShadowCursorIndex += codepointSize;
+                    TextBoxShadowCursorIndex += codepointSize;
                     shadowLength += codepointSize;
                     
                     // Make sure text last character is EOL
@@ -412,14 +465,14 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
             if ((textLength > 0) && IsKeyPressed(KEY_HOME))
             {
                 textBoxCursorIndex = 0;
-                textBoxShadowCursorIndex = 0;
+                TextBoxShadowCursorIndex = 0;
             }
 
             // Move cursor to end
             if ((textLength > textBoxCursorIndex) && IsKeyPressed(KEY_END))
             {
                 textBoxCursorIndex = textLength;
-                textBoxShadowCursorIndex = shadowBuff ? shadowLength : 0;
+                TextBoxShadowCursorIndex = shadowBuff ? shadowLength : 0;
             }
 
             // Delete codepoint from text, after current cursor position
@@ -446,10 +499,10 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
                     {
                         // ** shadowBuff **
                         int nextCodepointSize = 0;
-                        GetCodepointNext(shadowBuff + textBoxShadowCursorIndex, &nextCodepointSize);
+                        GetCodepointNext(shadowBuff + TextBoxShadowCursorIndex, &nextCodepointSize);
 
                         // Move backward text from cursor position
-                        for (int i = textBoxShadowCursorIndex; i < shadowLength; i++) shadowBuff[i] = shadowBuff[i + nextCodepointSize];
+                        for (int i = TextBoxShadowCursorIndex; i < shadowLength; i++) shadowBuff[i] = shadowBuff[i + nextCodepointSize];
 
                         shadowLength -= codepointSize;
 
@@ -495,15 +548,15 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
                     {
                         // ** shadowBuff **
                         int prevCodepointSize = 0;
-                        GetCodepointPrevious(shadowBuff + textBoxShadowCursorIndex, &prevCodepointSize);
+                        GetCodepointPrevious(shadowBuff + TextBoxShadowCursorIndex, &prevCodepointSize);
 
                         // Move backward text from cursor position
-                        for (int i = (textBoxShadowCursorIndex - prevCodepointSize); i < shadowLength; i++) shadowBuff[i] = shadowBuff[i + prevCodepointSize];
+                        for (int i = (TextBoxShadowCursorIndex - prevCodepointSize); i < shadowLength; i++) shadowBuff[i] = shadowBuff[i + prevCodepointSize];
 
                         // Prevent cursor index from decrementing past 0
-                        if (textBoxShadowCursorIndex > 0)
+                        if (TextBoxShadowCursorIndex > 0)
                         {
-                            textBoxShadowCursorIndex -= codepointSize;
+                            TextBoxShadowCursorIndex -= codepointSize;
                             shadowLength -= codepointSize;
                         }
 
@@ -538,9 +591,9 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
                     {
                         // ** shadowBuff **
                         int prevCodepointSize = 0;
-                        GetCodepointPrevious(shadowBuff + textBoxShadowCursorIndex, &prevCodepointSize);
+                        GetCodepointPrevious(shadowBuff + TextBoxShadowCursorIndex, &prevCodepointSize);
 
-                        if (textBoxShadowCursorIndex >= prevCodepointSize) textBoxShadowCursorIndex -= prevCodepointSize;
+                        if (TextBoxShadowCursorIndex >= prevCodepointSize) TextBoxShadowCursorIndex -= prevCodepointSize;
 
                         // ** mainBuff **
                         if (textBoxCursorIndex >= 0) textBoxCursorIndex --;
@@ -564,9 +617,9 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
                     {
                         // ** ShadowBuff **
                         int nextCodepointSize = 0;
-                        GetCodepointNext(shadowBuff + textBoxShadowCursorIndex, &nextCodepointSize);
+                        GetCodepointNext(shadowBuff + TextBoxShadowCursorIndex, &nextCodepointSize);
 
-                        if ((textBoxShadowCursorIndex + nextCodepointSize) <= shadowLength) textBoxShadowCursorIndex += nextCodepointSize;
+                        if ((TextBoxShadowCursorIndex + nextCodepointSize) <= shadowLength) TextBoxShadowCursorIndex += nextCodepointSize;
 
                         // ** mainBuff **
                         if ((textBoxCursorIndex + 1) <= textLength) textBoxCursorIndex ++;
@@ -623,7 +676,7 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
                             GetCodepointNext(mainBuff + textBoxCursorIndex, &nextCodepointSize);
                             shadowIndex+=nextCodepointSize;
                         }
-                        textBoxShadowCursorIndex = shadowIndex;
+                        TextBoxShadowCursorIndex = shadowIndex;
                     }
                 }
             }
@@ -634,12 +687,20 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
             //if (multiline) cursor.y = GetTextLines()
 
             // Finish text editing on ENTER or mouse click outside bounds
-            if ((!multiline && IsKeyPressed(KEY_ENTER)) ||
-                (!CheckCollisionPointRec(mousePosition, bounds) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)))
-            {
+            if (!multiline && IsKeyPressed(KEY_ENTER)) {
+                EditEvent.EventCode=KEY_PRESSED;
+                EditEvent.EventNum=KEY_ENTER;
+                ret=true;
+            }
+            else if(!CheckCollisionPointRec(mousePosition, bounds) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                EditEvent.EventCode=EDIT_END;
+                EditEvent.EventNum=0;
+                ret=true;
+            }
+
+            if (ret) {
                 textBoxCursorIndex = 0;     // GLOBAL: Reset the shared cursor index
-                textBoxShadowCursorIndex = 0;
-                result = 1;
+                TextBoxShadowCursorIndex = 0;
             }
         }
         else
@@ -651,8 +712,8 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
                 {
                     textBoxCursorIndex = (int)strlen(mainBuff);   // GLOBAL: Place cursor index to the end of current text
-                    textBoxShadowCursorIndex = shadowBuff ? (int)strlen(shadowBuff) : 0;
-                    result = 1;
+                    TextBoxShadowCursorIndex = shadowBuff ? (int)strlen(shadowBuff) : 0;
+                    ret=true;
                 }
             }
         }
@@ -687,6 +748,6 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
     else if (state == STATE_FOCUSED) GuiTooltip(bounds);
     //--------------------------------------------------------------------
 
-    return result;      // Mouse button pressed: result = 1
+    return ret;
 }
 */

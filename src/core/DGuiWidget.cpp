@@ -7,6 +7,7 @@
 #include <DGuiImage.h>
 #include <DGuiToggleSlide.h>
 #include <DGuiToggleSwitch.h>
+#include <DGuiLed.h>
 #include <sstream>
 #include <fstream>
 #include "raywui_log.h"
@@ -51,10 +52,10 @@ DGuiWidget::DGuiWidget(DWidgetType WidgetType, int LeftPos, int TopPos, int Widg
     SetParent(ParentWidget);
     // Events callback
     OnWidgetEvent=EventCallback;
-    // Bounds
-    SetBounds(LeftPos,TopPos,WidgetWidth,WidgetHeight);
     // Type
     SetWidgetType(WidgetType);
+    // Bounds
+    SetBounds(LeftPos,TopPos,WidgetWidth,WidgetHeight);
     // Initial Name
     Name=TypeToName(Type)+Id;
 
@@ -104,7 +105,7 @@ DGuiWidget::DGuiWidget(DWidgetType WidgetType, DDocking DockingPos, int OtherSiz
     Ready=true;
 };
 
-DGuiWidget::DGuiWidget(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback)
+DGuiWidget::DGuiWidget(DTools::DTree& WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback)
 {
     // Create id
     GenerateId();
@@ -113,11 +114,15 @@ DGuiWidget::DGuiWidget(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWid
     // Events callback
     OnWidgetEvent=EventCallback;
     // Init widget from DTree
-    Ready=InitFromTree(WidgetTree);
+    Ready=InitFromTree(std::ref(WidgetTree));
     // Initial Name
 //    if (Name.empty()) {
 //        Name=TypeToName(Type)+Id;
 //    }
+}
+
+DGuiWidget::~DGuiWidget()
+{
 }
 
 DGuiWidget* DGuiWidget::New(const std::string& LayoutFilename, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback)
@@ -130,7 +135,14 @@ DGuiWidget* DGuiWidget::New(const std::string& LayoutFilename, DGuiWidget* Paren
 
 DGuiWidget* DGuiWidget::New(DTools::DTree& WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback)
 {
-    DWidgetType WidgetType=NameToType(WidgetTree.ReadString(DJsonTree::ITEM_TYPE,""));
+    std::string WidgetTypeName=WidgetTree.ReadString(DJsonTree::ITEM_TYPE,"");
+    if (DString::CmpNoCase(WidgetTypeName,DJsonTree::VALUE_JSON)) {
+        // Widget is in a separate json
+        std::string JsonFilename=WidgetTree.ReadString(DJsonTree::ITEM_NAME,"");
+        return New(JsonFilename,ParentWidget,EventCallback);
+    }
+
+    DWidgetType WidgetType=NameToType(WidgetTypeName);
     if (WidgetType == DCONTAINER) {
         //Log::debug(TAG,"New Container");
         DGuiContainer *Container=new DGuiContainer(WidgetTree,ParentWidget,EventCallback);
@@ -169,32 +181,62 @@ DGuiWidget* DGuiWidget::New(DTools::DTree& WidgetTree, DGuiWidget* ParentWidget,
         DGuiToggleSwitch *ToggleSwitch=new DGuiToggleSwitch(WidgetTree,ParentWidget,EventCallback);
         return ToggleSwitch;
     }
+    else if (WidgetType == DLED) {
+        DGuiLed *Led=new DGuiLed(WidgetTree,ParentWidget,EventCallback);
+        return Led;
+    }
 
     if (WidgetTypes.contains(WidgetType)) {
         Log::error(TAG,"Widget type %s not implemented",WidgetTypes.at(WidgetType).c_str());
     }
     else {
-        Log::error(TAG,"Unknown Widget Type");
+        Log::error(TAG,"Unknown Widget Type %s",WidgetTypeName.c_str());
     }
     return nullptr;
 }
 
 bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
 {
+    std::string StrValue; // for generic string read in tree
+
     if (WidgetTree.IsEmpty()) {
         LastError="InitFromTree() WidgetTree is empty";
         return false;
     }
+
     // ** Load base info to instantiate a DWidget **
     // Type
     DWidgetType WidgetType=DWidgetType::UNKNOWN;
     std::string WidgetTypeName=WidgetTree.ReadString(DJsonTree::ITEM_TYPE,"");
     SetWidgetType(NameToType(WidgetTypeName));
 
+    // Name
+    Name=WidgetTree.ReadString(DJsonTree::ITEM_NAME,"");
+    if (Name.empty()) {
+        Name=TypeToName(Type)+Id;
+        Log::warning(TAG,"Widget %s with id %s has no name, default created: %s",WidgetTypeName.c_str(),Id.c_str(),Name.c_str());
+    }
+
     // Bounds
     Rectangle WidgetBounds;
     WidgetBounds.x=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_LEFT,-1);
+  /*
+    if (WidgetBounds.x < 0) {
+        StrValue=WidgetTree.ReadString(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_LEFT,"");
+        if (DString::CmpNoCase(StrValue,DJsonTree::VALUE_CENTER)) {
+            WidgetBounds.x=DDocking::DOCK_HCENTER;
+        }
+    }
+*/
     WidgetBounds.y=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_TOP,-1);
+/*
+    if (WidgetBounds.y < 0) {
+        StrValue=WidgetTree.ReadString(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_TOP,"");
+        if (DString::CmpNoCase(StrValue,DJsonTree::VALUE_CENTER)) {
+            WidgetBounds.y=DDocking::DOCK_VCENTER;
+        }
+    }
+*/
     WidgetBounds.width=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_WIDTH,-1);
     WidgetBounds.height=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_HEIGHT,-1);
     if (WidgetBounds.x < 0) {
@@ -218,7 +260,7 @@ bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
     SetTextAlign(AlignHoriz,AlignVert);
     
     // Text color
-    std::string StrValue=WidgetTree.ReadString(DJsonTree::ITEM_TEXT_COLOR,"");
+    StrValue=WidgetTree.ReadString(DJsonTree::ITEM_TEXT_COLOR,"");
     if (!StrValue.empty()) {
         Properties.TextColor=ColorStringToInt(StrValue);
     }
@@ -227,39 +269,57 @@ bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
     SetTextSpacing(WidgetTree.ReadInteger(DJsonTree::ITEM_TEXT_SPACING,0),false);
 
     // Text padding
-    SetTextPadding(WidgetTree.ReadInteger(DJsonTree::ITEM_TEXT_PADDING,0));
-
-    // Border width
-    int IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_BORDER_WIDTH,0);
-    if (IntValue > 0) {
-        Properties.BorderWidth=IntValue;
-    }
-
-    // Border color
-    IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_BORDER_COLOR,0);
-    if (IntValue > 0) {
-        Properties.BorderColor=IntValue;
-    }
+    SetTextPadding(WidgetTree.ReadInteger(DJsonTree::ITEM_TEXT_PADDING,0),false);
 
     // Border visible
     Properties.BorderVisible=WidgetTree.ReadBool(DJsonTree::ITEM_BORDER_VISIBLE,false);
+    if (Properties.BorderVisible) {
+        Properties.BorderColor=ColorToInt(BLACK);
+    }
+
+    // Border width
+    Properties.BorderWidth=WidgetTree.ReadInteger(DJsonTree::ITEM_BORDER_WIDTH,1);
+
+    // Border color
+    StrValue=WidgetTree.ReadString(DJsonTree::ITEM_BORDER_COLOR,"");
+    if (!StrValue.empty()) {
+        Properties.BorderColor=ColorStringToInt(StrValue);
+    }
 
     // Line color
-    IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_LINE_COLOR,0);
+    int IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_LINE_COLOR,0);
     if (IntValue > 0) {
         Properties.LineColor=IntValue;
     }
 
-    // Backround color
+    // Background color
     IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_BACKGROUND_COLOR,0);
     if (IntValue > 0) {
         Properties.BackGroundColor=IntValue;
     }
 
-    // AnchorId
-    // Widget->Properties.AnchorId=WidgetTree.ReadString(DJsonTree::ITEM_ANCHOR_ID,""); // deprecated
+    // Anchor (if AnchorToSide is empty, ANCHOR_NONE is set)
+    std::string AnchorTree=DJsonTree::ITEM_BOUNDS + DTree::DEFAULT_TRANSLATOR + DJsonTree::ITEM_ANCHOR;
+    // Side of anchored widget
+    std::string AnchorToSide=WidgetTree.ReadString(AnchorTree,DJsonTree::ITEM_SIDE_OF,"");
+    // Align to anchored widget
+    std::string AlignToSide=WidgetTree.ReadString(AnchorTree,DJsonTree::ITEM_SIDE_ALIGN,"");
+    // Name of anchored widget
+    std::string WidgetName=WidgetTree.ReadString(AnchorTree,DJsonTree::ITEM_NAME,"");
+    // Offset from anchored widget
+    int AnchorOffset=WidgetTree.ReadInteger(AnchorTree,DJsonTree::ITEM_OFFSET,0);
+    SetAnchor(NameToAnchor(AnchorToSide),NameToAlign(AlignToSide,ALIGN_LEFT),WidgetName,AnchorOffset);
 
-    // Possible docking position
+    // Parent aling
+    std::string ParentAlignTree=DJsonTree::ITEM_BOUNDS + DTree::DEFAULT_TRANSLATOR +DJsonTree::ITEM_PARENT_ALIGN;
+    std::vector<std::string> AlignNames;
+    WidgetTree.ReadNames(ParentAlignTree,AlignNames);
+    for (std::string& AlignName : AlignNames) {
+        AddParentAlign(AlignName,WidgetTree.ReadInteger(ParentAlignTree,AlignName,0),false);
+    }
+    UpdateParentAligns();
+
+    // Docking position
     std::string DockingSide=WidgetTree.ReadString(DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIDE,"");
     if (!DockingSide.empty()) {
         int DockingSize=WidgetTree.ReadInteger(DJsonTree::ITEM_DOCKING,DJsonTree::ITEM_SIZE,-1);
@@ -273,14 +333,7 @@ bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
         int FontSize=WidgetTree.ReadInteger(DJsonTree::ITEM_LABEL,DJsonTree::ITEM_TEXT_SIZE,0);
         std::string LabelSide=WidgetTree.ReadString(DJsonTree::ITEM_LABEL,DJsonTree::ITEM_SIDE,"");
         int LabelOffset=WidgetTree.ReadInteger(DJsonTree::ITEM_LABEL,DJsonTree::ITEM_OFFSET,0);
-        SetLabel(LabelText,FontSize,NameToDocking(LabelSide,DDocking::DOCK_LEFT),LabelOffset);
-    }
-
-    // Name
-    Name=WidgetTree.ReadString(DJsonTree::ITEM_NAME,"");
-    if (Name.empty()) {
-        Name=TypeToName(Type)+Id;
-        Log::warning(TAG,"Widget %s with id %s has no name, default created: %s",WidgetTypeName.c_str(),Id.c_str(),Name.c_str());
+        SetLabel(LabelText,FontSize,NameToSide(LabelSide,SIDE_RIGHT),LabelOffset);
     }
 
     // Enabled
@@ -292,10 +345,42 @@ bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
     return true;
 }
 
-void DGuiWidget::SetLabel(std::string LabelText, int FontSize, DDocking LabelSide, int LabelOffset)
+/**
+ * @brief Set Label of the widget. Label is a text anchored outside widget.
+ * N.B.
+ * with this method you can set the anchor left, right, bottom, top with only one offset value.
+ * If you want to set custom x,y offset call SetLabel(std::string LabelText, int FontSize, DSide LabelSide, int OffsetX, int OffsetY).
+ * 
+ * @param LabelText     ->  Text of the label.
+ * @param FontSize      ->  Label font size.
+ * @param LabelSide     ->  One of DSide values.
+ * @param SideOffset    ->  Offset from label side.
+ */
+void DGuiWidget::SetLabel(std::string LabelText, int FontSize, DSide LabelSide, uint SideOffset)
+{
+    SetLabel(LabelText,FontSize,LabelSide,SideOffset,SideOffset);
+}
+
+/**
+ * @brief Set Label of the widget. Label is a text anchored outside widget.
+ * N.B.
+ * with this method you can set the anchor left, right, bottom, top with only one offset value.
+ * If you want to set custom x,y offset call SetLabel(std::string LabelText, int FontSize, DSide LabelSide, int OffsetX, int OffsetY).
+ * 
+ * @param LabelText     ->  Text of the label.
+ * @param FontSize      ->  Label font size.
+ * @param LabelSide     ->  One of DSide values.
+ * @param OffsetX       ->  X offset from upper-left corner of widget.
+ * @param OffsetY       ->  Y offset from upper-left corner of widget.
+ */
+void DGuiWidget::SetLabel(std::string LabelText, int FontSize, DSide LabelSide, int OffsetX, int OffsetY)
 {
     // Text
     if (LabelText.empty()) {
+        if (Label.Widget) {
+            delete Label.Widget;
+            Label.Widget=nullptr;
+        }
         return;
     }
     
@@ -308,58 +393,140 @@ void DGuiWidget::SetLabel(std::string LabelText, int FontSize, DDocking LabelSid
         FontSize=GuiGetStyle(DEFAULT,TEXT_SIZE);
     }
 
-    if (!Label) {
+    if (!Label.Widget) {
         // Not yet created
-        Label=new DGuiLabel(nullptr);
+        Label.Widget=new DGuiLabel(nullptr);
     }
 
-    Label->SetTextSize(FontSize,false);
-    Label->SetText(LabelText,true);
+    Label.OffsetX=OffsetX;
+    Label.OffsetY=OffsetY;
+    Label.Widget->SetTextSize(FontSize,false);
+    Label.Widget->SetText(LabelText,false);
+    Label.Widget->UpdateSize();
     
     // Calculate position
     switch (LabelSide) {
-        case DDocking::DOCK_BOTTOM:
-            Label->Bounds.x=Bounds.x+((Bounds.width-Label->Bounds.width)/2); // Center horizzontally
-            Label->Bounds.y=Bounds.y+Bounds.height+LabelOffset;
+        case SIDE_BOTTOM:
+            Label.Widget->Bounds.x=Bounds.x+((Bounds.width-Label.Widget->Bounds.width)/2); // Center horizzontally
+            Label.Widget->Bounds.y=Bounds.y+Bounds.height+Label.OffsetY;
             break;
-        case DDocking::DOCK_TOP:
-            Label->Bounds.x=Bounds.x+((Bounds.width-Label->Bounds.width)/2); // Center horizzontally
-            Label->Bounds.y=Bounds.y-Label->Bounds.height-LabelOffset;
+        case SIDE_TOP:
+            Label.Widget->Bounds.x=Bounds.x+((Bounds.width-Label.Widget->Bounds.width)/2); // Center horizzontally
+            Label.Widget->Bounds.y=Bounds.y-Label.Widget->Bounds.height-Label.OffsetY;
             break;
-        case DDocking::DOCK_LEFT:
-            Label->Bounds.x=Bounds.x-Label->Bounds.width-LabelOffset;
-            Label->Bounds.y=Bounds.y+((Bounds.height-Label->Bounds.height)/2); // Center vertically
+        case SIDE_LEFT:
+            Label.Widget->Bounds.x=Bounds.x-Label.Widget->Bounds.width-Label.OffsetX;
+            Label.Widget->Bounds.y=Bounds.y+((Bounds.height-Label.Widget->Bounds.height)/2); // Center vertically
             break;
-        case DDocking::DOCK_RIGHT:
-            Label->Bounds.x=Bounds.x+Bounds.width+LabelOffset;
-            Label->Bounds.y=Bounds.y+((Bounds.height-Label->Bounds.height)/2); // Center vertically
+        case SIDE_RIGHT:
+            Label.Widget->Bounds.x=Bounds.x+Bounds.width+Label.OffsetX;
+            Label.Widget->Bounds.y=Bounds.y+((Bounds.height-Label.Widget->Bounds.height)/2); // Center vertically
             break;
+        case SIDE_CUSTOM:
+            Label.Widget->Bounds.x=Bounds.x+Label.OffsetX;
+            Label.Widget->Bounds.y=Bounds.y+Label.OffsetY;
         default:
             break;
     }
 
-    Properties.LabelSide=LabelSide;
-    Properties.LabelOffset=LabelOffset;
+    Label.Side=LabelSide;
 }
 
-DGuiWidget::DDocking DGuiWidget::NameToDocking(std::string SideName, DGuiWidget::DDocking Default)
+DWidgetType DGuiWidget::NameToType(const std::string& WidgetTypeName)
 {
-    if (SideName.empty()) {
-        return Default;
+    DWidgetType WidgetType=DWidgetType::UNKNOWN;
+    for (auto item : WidgetTypes) {
+        if (item.second == WidgetTypeName) {
+            return item.first;
+        }
     }
-    else if (DString::CmpNoCase(SideName,DJsonTree::VALUE_BOTTOM)) {
-        return DGuiWidget::DDocking::DOCK_BOTTOM;
+    return WidgetType;
+}
+
+std::string DGuiWidget::TypeToName(DWidgetType WidgetType)
+{
+    std::string WidgetTypeName;
+    if (WidgetTypes.contains(WidgetType)) {
+        WidgetTypeName=WidgetTypes.at(WidgetType);
     }
-    else if (DString::CmpNoCase(SideName,DJsonTree::VALUE_TOP)) {
-        return DGuiWidget::DDocking::DOCK_TOP;
-    }
-    else if (DString::CmpNoCase(SideName,DJsonTree::VALUE_LEFT)) {
-        return DGuiWidget::DDocking::DOCK_LEFT;
-    }
-    else if (DString::CmpNoCase(SideName,DJsonTree::VALUE_RIGHT)) {
-        return DGuiWidget::DDocking::DOCK_RIGHT;
+    return WidgetTypeName;
+}
+
+DDocking DGuiWidget::NameToDocking(const std::string& SideName, DDocking Default)
+{
+    for (auto item : Dockings) {
+        if (item.second == SideName) {
+            return item.first;
+        }
     }
     return Default;
+}
+
+std::string DGuiWidget::DockingToName(DDocking DockingPos)
+{
+    std::string DockingSideName;
+    if (Dockings.contains(DockingPos)) {
+        DockingSideName=Dockings.at(DockingPos);
+    }
+    return DockingSideName;
+}
+
+DSide DGuiWidget::NameToSide(const std::string& SideName, DSide Default)
+{
+    for (auto item : Sides) {
+        if (item.second == SideName) {
+            return item.first;
+        }
+    }
+    return Default;
+}
+
+std::string DGuiWidget::SideToName(DSide Side)
+{
+    std::string SideName;
+    if (Sides.contains(Side)) {
+        SideName=Sides.at(Side);
+    }
+    return SideName;
+}
+
+DAnchorSide DGuiWidget::NameToAnchor(const std::string& AnchorSideName)
+{
+    DAnchorSide AnchorSide=ANCHOR_NONE;
+    for (auto item : AnchorSides) {
+        if (item.second == AnchorSideName) {
+            return item.first;
+        }
+    }
+    return AnchorSide;
+}
+
+std::string DGuiWidget::AnchorToName(DAnchorSide AnchorSide)
+{
+    std::string AnchorSideName;
+    if (AnchorSides.contains(AnchorSide)) {
+        AnchorSideName=AnchorSides.at(AnchorSide);
+    }
+    return AnchorSideName;
+}
+
+DAlign DGuiWidget::NameToAlign(const std::string& AlignName, DAlign Default)
+{
+    for (auto item : Aligns) {
+        if (item.second == AlignName) {
+            return item.first;
+        }
+    }
+    return Default;
+}
+
+std::string DGuiWidget::AlignToName(DAlign Align)
+{
+    std::string AlignName;
+    if (Aligns.contains(Align)) {
+        AlignName=Aligns.at(Align);
+    }
+    return AlignName;
 }
 
 void DGuiWidget::GenerateId(void)
@@ -368,11 +535,15 @@ void DGuiWidget::GenerateId(void)
     std::ostringstream ss;
     ss << (void const *)this;
     Id=ss.str();
+    Uid=reinterpret_cast<std::uintptr_t>(this);
 }
 
 void DGuiWidget::SetParent(DGuiWidget *ParentContainer) {
     Parent=ParentContainer;
-    if (Parent) {
+    if (Parent) { // && Parent->GetWidgetType() == DCONTAINER) {
+        // Shift into parent container
+//        Bounds.x+=Parent->Bounds.x;
+//        Bounds.y+=Parent->Bounds.y;
         if (Bounds.width < 0) {
             // Parent width
             SetWidth(Parent->GetWidth());
@@ -384,8 +555,8 @@ void DGuiWidget::SetParent(DGuiWidget *ParentContainer) {
     }
     else {
         // Parent null, force re-set size
-        SetWidth(Bounds.width);
-        SetHeight(Bounds.height);
+//        SetWidth(Bounds.width);
+//        SetHeight(Bounds.height);
     }
 }
 
@@ -407,21 +578,40 @@ void DGuiWidget::SendEvent(DWidgetEvent WidgetEvent)
     }
     if (OnGuiEvent && !Handled) {
         // Send DGuiEvent only if OnWidgetEvent() return false
-        OnGuiEvent(DGuiEvent {Type, Id, WidgetEvent});
+        OnGuiEvent(DGuiEvent {Type, Id, Uid, WidgetEvent});
     }
 }
 
 /**
- * @brief Set the widget position.
+ * @brief Set the widget position (relative to te parent container).
  * 
  * @param LeftPos   ->  left position of upper left corner.
- * @param TopPos  ->  right position of upper left corner.
+ * @param TopPos    ->  right position of upper left corner.
  */
 void DGuiWidget::SetPos(int LeftPos, int TopPos)
 {
-    Bounds.x=LeftPos;
-    Bounds.y=TopPos;
-    //Changed=true;
+    if (LeftPos == DDocking::DOCK_HCENTER && Parent) {
+        Bounds.x=(Parent->Bounds.width-Bounds.width)/2;
+    }
+    else {
+        Bounds.x=LeftPos;
+    }
+
+    if (TopPos == DDocking::DOCK_VCENTER && Parent) {
+        Bounds.y=(Parent->Bounds.y-Bounds.y)/2;
+    }
+    else {
+        Bounds.y=TopPos;
+    }
+/*    
+    if (Parent) {
+        //if (Parent->GetWidgetType() == DCONTAINER) {
+            // Shift into parent container
+            Bounds.x+=Parent->Bounds.x;
+            Bounds.y+=Parent->Bounds.y;
+        //}
+    }
+*/
 };
 
 /**
@@ -439,10 +629,18 @@ void DGuiWidget::SetSize(int Width, int Height)
 /**
  * @brief Set the widget width.
  * 
- * @param Width  ->  width of widget.
+ * @param Width  -> width of widget:
+ *                      <  0    Parent width
+ *                      == 0    Default
+ *                      >  0    Set
  */
 void DGuiWidget::SetWidth(int Width)
 {
+    bool NeedUpate=false;
+    if (Bounds.width != Width) {
+            NeedUpate=true;
+    }
+
     if (Width < 0) {
         // Parent width
         if (Parent) {
@@ -461,6 +659,11 @@ void DGuiWidget::SetWidth(int Width)
     else {
         Bounds.width=Width;
     }
+
+    if (NeedUpate) {
+        UpdateParentAligns();
+        UpdateAnchor();
+    }
 };
 
 /**
@@ -470,6 +673,11 @@ void DGuiWidget::SetWidth(int Width)
  */
 void DGuiWidget::SetHeight(int Height)
 {
+    bool NeedUpdate=false;
+    if (Bounds.height != Height) {
+            NeedUpdate=true;
+    }
+
     if (Height < 0) {
         // Parent height
         if (Parent) {
@@ -485,6 +693,11 @@ void DGuiWidget::SetHeight(int Height)
     }
     else {
         Bounds.height=Height;
+    }
+
+    if (NeedUpdate) {
+        UpdateParentAligns();
+        UpdateAnchor();
     }
 };
 
@@ -545,7 +758,233 @@ void DGuiWidget::SetBounds(Rectangle WidgetBounds)
 {
     SetPos(WidgetBounds.x,WidgetBounds.y);
     SetSize(WidgetBounds.width,WidgetBounds.height);
-};
+}
+
+Rectangle DGuiWidget::GetAbsBounds(void)
+{
+    Rectangle AbsBounds=Bounds;
+    if (Parent) {
+        Rectangle ParentBounds=Parent->GetAbsBounds();
+        AbsBounds.x+=ParentBounds.x;
+        AbsBounds.y+=ParentBounds.y;
+    }
+    return AbsBounds;
+}
+
+/**
+ * @brief 
+ * 
+ * @param WidgetName 
+ */
+bool DGuiWidget::SetAnchor(DGuiWidget::DAnchor Anchor)
+{
+    return SetAnchor(Anchor.AnchorToSide,Anchor.AlignToSide,Anchor.WidgetName,Anchor.AnchorOffset);
+}
+
+bool DGuiWidget::SetAnchor(DAnchorSide AnchorToSide, DAlign AlignToSide, std::string WidgetName, int AnchorOffset)
+{
+    Properties.Anchor.AnchorToSide=AnchorToSide;
+    Properties.Anchor.AlignToSide=AlignToSide;
+    Properties.Anchor.WidgetName=WidgetName;
+    Properties.Anchor.AnchorOffset=AnchorOffset;
+
+    return UpdateAnchor();
+}
+
+/**
+ * @brief Move widget position (only) due to the Properties.Anchor content.
+ * Set position to right/left/bottom/top side **OUT** of an other widget.
+ * Works only if:
+ * - This widget has parent container.
+ * - The widget in parent container is found.
+ * N.B.
+ * If use a Dtree for layout, be sure that this widget is after RightOf widget.
+ * 
+ * @return false 
+ */
+bool DGuiWidget::UpdateAnchor(void)
+{
+    if (Properties.Anchor.WidgetName.empty() || Properties.Anchor.AnchorToSide == ANCHOR_NONE) {
+        return false;
+    }
+
+    
+    if (!Parent) {
+        Log::warning(TAG,"Cannot set Anchor of widget <%s> because it has not parent container", Name.c_str());
+        return false;
+    }
+
+    DGuiWidget *Widget=Parent->FindWidgetByName(Properties.Anchor.WidgetName);
+    if (!Widget) {
+        Log::error(TAG,"Cannot set Anchor because container <%s> has not widget <%s>",Parent->Name.c_str(),Properties.Anchor.WidgetName.c_str());
+        return false;
+    }
+
+    switch (Properties.Anchor.AnchorToSide) {
+        case ANCHOR_RIGHT_OF:
+            // Set Position to the right of Widget
+            Log::debug(TAG,"Setting anchor to RightOf <%s>",Properties.Anchor.WidgetName.c_str());
+            Bounds.x=Widget->Bounds.x+Widget->Bounds.width+Properties.Anchor.AnchorOffset;
+            if (Properties.Anchor.AlignToSide == ALIGN_BOTTOM) {
+                // Align to Bottom
+                Bounds.y=Widget->Bounds.y+Widget->Bounds.height-Bounds.height;
+            }
+            else if (Properties.Anchor.AlignToSide == ALIGN_TOP) {
+                // Align to top
+                Bounds.y=Widget->Bounds.y;
+            }
+            else {
+                // Default align to center
+                Bounds.y=abs((Widget->Bounds.height-Bounds.height)/2);
+            }
+            break;
+        case ANCHOR_LEFT_OF:
+            // Set Position to the left of Widget
+            Log::debug(TAG,"Setting anchor to LeftOf <%s>",Properties.Anchor.WidgetName.c_str());
+            Bounds.x=Widget->Bounds.x-Widget->Bounds.width-Properties.Anchor.AnchorOffset;
+            if (Properties.Anchor.AlignToSide == ALIGN_BOTTOM) {
+                // Align to Bottom
+                Bounds.y=Widget->Bounds.y+Widget->Bounds.height-Bounds.height;
+            }
+            else if (Properties.Anchor.AlignToSide == ALIGN_TOP) {
+                // Align to top
+                Bounds.y=Widget->Bounds.y;
+            }
+            else {
+                // Default align to center
+                Bounds.y=abs((Widget->Bounds.height-Bounds.height)/2);
+            }
+            break;
+        case ANCHOR_BOTTOM_OF:
+            // Set Position to the bottom of Widget
+            Log::debug(TAG,"Setting anchor to BottomOf <%s>",Properties.Anchor.WidgetName.c_str());
+            if (Properties.Anchor.AlignToSide == ALIGN_RIGHT) {
+                // Align to right
+                Bounds.x=Widget->Bounds.x+Widget->Bounds.width-Bounds.width;
+            }
+            else if (Properties.Anchor.AlignToSide == ALIGN_LEFT) {
+                // Align to right
+                Bounds.x=Widget->Bounds.x;
+            }
+            else {
+                // Default align to center
+                Bounds.x=abs((Widget->Bounds.width-Bounds.width)/2);
+            }
+            Bounds.y=Widget->Bounds.y+Widget->Bounds.height+Properties.Anchor.AnchorOffset;
+            break;
+        case ANCHOR_TOP_OF:
+            // Set Position to the top of Widget
+            Log::debug(TAG,"Setting anchor to TopOf <%s>",Properties.Anchor.WidgetName.c_str());
+            if (Properties.Anchor.AlignToSide == ALIGN_RIGHT) {
+                // Align to right
+                Bounds.x=Widget->Bounds.x+Widget->Bounds.width-Bounds.width;
+            }
+            else if (Properties.Anchor.AlignToSide == ALIGN_LEFT) {
+                // Align to right
+                Bounds.x=Widget->Bounds.x;
+            }
+            else {
+                // Default align to center
+                Bounds.x=abs((Widget->Bounds.width-Bounds.width)/2);
+            }
+            Bounds.y=Widget->Bounds.y-Widget->Bounds.height-Properties.Anchor.AnchorOffset;
+            break;
+        default:
+            // Should never happens...
+            Log::debug(TAG,"Anchor value <%d> of widget <%s> NOT supprted",Properties.Anchor.AnchorToSide,Properties.Anchor.WidgetName.c_str());
+            return false;
+    }
+
+    return true;
+}
+
+void DGuiWidget::SetParentAligns(std::map<std::string,int> AlignList)
+{
+    for (auto &[AlignName,AlignOffset] : AlignList) {
+        AddParentAlign(AlignName,AlignOffset,false);
+    }
+
+    UpdateParentAligns();
+}
+
+void DGuiWidget::AddParentAlign(std::string AlignName, int AlignOffset,bool ForceUpdate) {
+    DAlign Align=NameToAlign(AlignName,DAlign::ALIGH_NONE);
+    if (Align != DAlign::ALIGH_NONE) {
+        Properties.ParentAligns.emplace(std::make_pair(Align,AlignOffset));
+    }
+    
+    if (ForceUpdate) {
+        UpdateParentAligns();
+    }
+}
+
+/**
+ * @brief 
+ * - ALIGN_HCENTER and ALIGN_VCENTER always have priority.
+ * - If ALIGN_CENTER is set, only last found alignment is used.
+ * - ALIGN_CENTER stand alone is equivalent of ALIGN_HCENTER | ALIGN_VCENTER.
+ * 
+ */
+void DGuiWidget::UpdateParentAligns(void)
+{
+    if (!Parent || Properties.ParentAligns.empty()) {
+        return;
+    }
+
+    bool Centered=false;
+    bool HCentered=false;
+    bool VCentered=false;
+
+    if (Properties.ParentAligns.contains(DAlign::ALIGN_CENTER) && Parent) {
+        Centered=true;
+        if (Properties.ParentAligns.size() == 1) {
+            HCentered=true;
+            VCentered=true;
+        }
+    }
+
+    if (Properties.ParentAligns.contains(DAlign::ALIGN_LEFT)) {
+        Bounds.x=Properties.ParentAligns[DAlign::ALIGN_LEFT];
+        if (Centered) {
+            VCentered=true;
+        }
+    }
+
+    if (Properties.ParentAligns.contains(DAlign::ALIGN_RIGHT)) {
+        Bounds.x=Parent->Bounds.width-Bounds.width-Properties.ParentAligns[DAlign::ALIGN_RIGHT];
+        if (Centered) {
+            VCentered=true;
+        }
+    }
+
+    if (Properties.ParentAligns.contains(DAlign::ALIGN_BOTTOM)) {
+        Bounds.y=Parent->Bounds.height-Bounds.height-Properties.ParentAligns[DAlign::ALIGN_BOTTOM];
+        if (Centered) {
+            HCentered=true;
+        }
+    }
+
+    if (Properties.ParentAligns.contains(DAlign::ALIGN_TOP)) {
+        Bounds.y=Properties.ParentAligns[DAlign::ALIGN_TOP];
+        if (Centered) {
+            HCentered=true;
+        }
+    }
+
+    if (Properties.ParentAligns.contains(DAlign::ALIGN_HCENTER) && Parent) {
+        HCentered=true;
+    }
+    if (Properties.ParentAligns.contains(DAlign::ALIGN_VCENTER) && Parent) {
+        VCentered=true;
+    }
+
+    if (HCentered) {
+        Bounds.x=(Parent->Bounds.width-Bounds.width)/2;
+    }
+    if (VCentered) {
+        Bounds.y=(Parent->Bounds.height-Bounds.height)/2;
+    }
+}
 
 /**
  * @brief Set the size of Text (if widget need text).
@@ -561,17 +1000,21 @@ void DGuiWidget::SetTextSize(int NewSize, bool ForceAutoSize)
     Properties.TextSize=NewSize;
 
     if (ForceAutoSize) {
-        AutoSize();
+        UpdateSize();
     }
 }
 
-void DGuiWidget::SetTextPadding(int NewPadding)
+void DGuiWidget::SetTextPadding(int NewPadding, bool ForceAutoSize)
 {
     if (NewPadding <= 0) {
         NewPadding=DEFAULT_TEXT_PADDING;
     }
 
     Properties.TextPadding=NewPadding;
+
+    if (ForceAutoSize) {
+        UpdateSize();
+    }
 }
 
 void DGuiWidget::SetTextSpacing(int NewSpacing, bool ForceAutoSize)
@@ -583,48 +1026,54 @@ void DGuiWidget::SetTextSpacing(int NewSpacing, bool ForceAutoSize)
     Properties.TextSpacing=NewSpacing;
 
     if (ForceAutoSize) {
-        AutoSize();
+        UpdateSize();
     }
 }
 
+void DGuiWidget::UpdateSize(void)
+{
+
+}
+/*
 void DGuiWidget::AutoSize(void)
 {
-    // Measure text
-    int TextWidth=GetTextWidth(Text,guiFont,Properties.TextSize);
-    /// @todo int TextWidth=GetTextWidth(Text,Properties.TextFont,Properties.TextSize);
-    // Expand
-    int HeightPadding=(Properties.BorderWidth*2)+(Properties.TextPadding*2);
-    int WidthPadding=HeightPadding+Properties.TextSpacing;
-    SetWidth(TextWidth+WidthPadding);
-    SetHeight(Properties.TextSize+HeightPadding);
+    // Expand due to the padding and border
+    if (Text.empty()) {
+        return;
+    }
+    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
+    SetWidth(GetTextBounds().width+(TextOffset*2));
+    SetHeight(Properties.TextSize+(TextOffset*2));
 }
 
+Rectangle DGuiWidget::GetTextBounds(void)
+{
+    // Measure text
+    /// @todo UpdateTextWith() when text changes
+    int TextWidth=GetTextWidth(Text,Properties.TextFont,Properties.TextSize);
+    
+    // Calculate text bounds
+    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
+    Rectangle AbsBounds=GetAbsBounds();
+    Rectangle TextBounds;
+    TextBounds.x=AbsBounds.x+TextOffset;
+    TextBounds.y=AbsBounds.y+TextOffset;
+    TextBounds.width=TextWidth;
+    TextBounds.height=Properties.TextSize;
+
+    return TextBounds;
+}
+*/
 void DGuiWidget::UpdateLabel(void)
 {
-    if (Label) {
-        SetLabel(Label->Text,Label->Properties.TextSize,Properties.LabelSide,Properties.LabelOffset);
+    if (Label.Widget) {
+        SetLabel(Label.Widget->Text,Label.Widget->Properties.TextSize,Label.Side,Label.OffsetX,Label.OffsetY);
     }
 }
 
 void DGuiWidget::SetDocking(std::string DockingSideName, int OtherSize) {
-    if (DString::CmpNoCase(DockingSideName,DJsonTree::VALUE_BOTTOM)) {
-        SetDocking(DGuiWidget::DOCK_BOTTOM,OtherSize);
-    }
-    else if (DString::CmpNoCase(DockingSideName,DJsonTree::VALUE_TOP)) {
-        SetDocking(DGuiWidget::DOCK_TOP,OtherSize);
-    }
-    else if (DString::CmpNoCase(DockingSideName,DJsonTree::VALUE_LEFT)) {
-        SetDocking(DGuiWidget::DOCK_LEFT,OtherSize);
-    }
-    else if (DString::CmpNoCase(DockingSideName,DJsonTree::VALUE_RIGHT)) {
-        SetDocking(DGuiWidget::DOCK_RIGHT,OtherSize);
-    }
-    else if (DString::CmpNoCase(DockingSideName,DJsonTree::VALUE_CENTER)) {
-        SetDocking(DGuiWidget::DOCK_CENTER,OtherSize);
-    }
-    else {
-        Log::warning(TAG,"Docking side unkown: %s",DockingSideName.c_str());
-    }
+    DDocking Docking=NameToDocking(DockingSideName,DOCK_CENTER);
+    SetDocking(Docking,OtherSize);
 }
 
 /**
@@ -678,6 +1127,7 @@ void DGuiWidget::SetDocking(DDocking DockingSide, int OtherSize) {
         case DOCK_VCENTER:
         case DOCK_CENTER:
             /// @todo
+            Log::warning("Docking mode <%d> not implemented yet",DockingToName(DockingSide).c_str());
         default:
             break;
     }
@@ -717,6 +1167,11 @@ std::string DGuiWidget::GetId(void) {
     return Id;
 }
 
+DGuiWidget* DGuiWidget::FindWidgetByName(std::string WidgetName)
+{
+    return nullptr;
+}
+
 size_t DGuiWidget::GetWidth(void) {
     return Bounds.width;
 }
@@ -736,7 +1191,7 @@ void DGuiWidget::SetText(std::string NewText, bool ForceAutoSize) {
     Text=NewText;
 
     if (ForceAutoSize) {
-        AutoSize();
+        UpdateSize();
     }
 }
 
@@ -795,7 +1250,7 @@ void DGuiWidget::SetWidgetType(DWidgetType WidgetType)
 {
     Type=WidgetType;
     // Text
-    /// @todo Properties.TextFont=GuiGetFont();
+    Properties.TextFont=GuiGetFont();
     Properties.TextColor=GuiGetStyle(Type,TEXT_COLOR_NORMAL);
     Properties.TextPadding=DEFAULT_TEXT_PADDING; //GuiGetStyle(Type, TEXT_PADDING);
     Properties.TextAlign.Horiz=(DTextAlignH) GuiGetStyle(Type,TEXT_ALIGNMENT);
@@ -812,12 +1267,16 @@ void DGuiWidget::SetWidgetType(DWidgetType WidgetType)
     // Others
     Properties.BorderWidth=GuiGetStyle(Type,BORDER_WIDTH);
     Properties.BorderVisible=false;
+
+    // Anchor
+    Properties.Anchor.AnchorToSide=DAnchorSide::ANCHOR_NONE;
+    Properties.Anchor.AlignToSide=DAlign::ALIGN_LEFT;
+    Properties.Anchor.AnchorOffset=0;
 }
 
 // ********************** Methods used during draw **********************
 /**
- * @brief Backup current raygui global style values
- * 
+ * @brief Backup current raygui global style values in a temporary DProperty
  */
 void DGuiWidget::BackupCurrentGuiStyle(void) {
     // Text
@@ -839,6 +1298,9 @@ void DGuiWidget::BackupCurrentGuiStyle(void) {
     TempStyle.TextAlign.Vert=(DTextAlignV) GuiGetStyle(DEFAULT,TEXT_ALIGNMENT_VERTICAL);
 }
 
+/**
+ * @brief Set all raygui styles for current widget from DProperty
+ */
 void DGuiWidget::UpdateCurrentGuiStyle(void) {
     // Text
     GuiSetStyle(Type,TEXT_COLOR_NORMAL,Properties.TextColor);
@@ -866,6 +1328,9 @@ void DGuiWidget::UpdateCurrentGuiStyle(void) {
     */
 }
 
+/**
+ * @brief Restore previous saved current sytles
+ */
 void DGuiWidget::RestoreCurrentGuiStyle(void) {
     // Text
     GuiSetStyle(Type,TEXT_COLOR_NORMAL,TempStyle.TextColor);
@@ -890,24 +1355,27 @@ void DGuiWidget::RestoreCurrentGuiStyle(void) {
 
 void DGuiWidget::Draws(void) {
     if (Properties.Visible) {
+        // Store current global raygui styles
         BackupCurrentGuiStyle();
+        // Set global raygui style from this->Properties
         UpdateCurrentGuiStyle();
 
         // Draw Widget
         Draw();
 
         if (Properties.BorderVisible) {
-            DrawRectangleLinesEx(Bounds,Properties.BorderWidth,GetColor(Properties.BorderColor));
+            DrawRectangleLinesEx(GetAbsBounds(),Properties.BorderWidth,GetColor(Properties.BorderColor));
         }
 
-        if (Label) {
+        if (Label.Widget) {
             if (Type != DLABEL) {
                 // DGuiLabel cannot have a label (otherwise loops forever and does not make sense)
                 // Draw Label (use Draws() to execute complete draw cycle)
-                Label->Draws();
+                Label.Widget->Draws();
             }
         }
 
+        // Restore previous saved global raygui styles
         RestoreCurrentGuiStyle();
     }
 }
@@ -1083,26 +1551,6 @@ DRglControl DGuiWidget::DecodeRglLine(std::string Line) {
     return (RglControl);
 }
 
-DWidgetType DGuiWidget::NameToType(const std::string& WidgetTypeName)
-{
-    DWidgetType WidgetType=DWidgetType::UNKNOWN;
-    for (auto item : WidgetTypes) {
-        if (item.second == WidgetTypeName) {
-            return item.first;
-        }
-    }
-    return WidgetType;
-}
-
-std::string DGuiWidget::TypeToName(DWidgetType WidgetType)
-{
-    std::string WidgetTypeName;
-    if (WidgetTypes.contains(WidgetType)) {
-        WidgetTypeName=WidgetTypes.at(WidgetType);
-    }
-    return WidgetTypeName;
-}
-
 /**
  * @brief Decode a string that rappresent a color in its integer value.
  * 
@@ -1190,6 +1638,7 @@ int DGuiWidget::GetTextWidth(std::string TextStr, Font TextFont, float FontSize)
 
     // detect icon pattern
     int textIconOffset = 0;
+    int textSize=0;
     if (!TextStr.empty()) {
         if (TextStr[0] == '#') {
             for (int i = 1; (i < 5) && (TextStr[i] != '\0'); i++) {
@@ -1202,11 +1651,9 @@ int DGuiWidget::GetTextWidth(std::string TextStr, Font TextFont, float FontSize)
 
         const char *text=&(TextStr.c_str()[textIconOffset]);
 
-        int textSize=MeasureText(text,FontSize);
+        //int textSize=MeasureText(text,FontSize)+(Properties.TextSpacing*TextStr.size());
         /// @todo misurare icona
 
-        return textSize;
-/*
         // Custom MeasureText() implementation
         // Make sure guiFont is set, GuiGetStyle() initializes it lazynessly
         //float fontSize = (float)GuiGetStyle(DEFAULT, TEXT_SIZE);
@@ -1222,7 +1669,7 @@ int DGuiWidget::GetTextWidth(std::string TextStr, Font TextFont, float FontSize)
             }
 
             float scaleFactor = FontSize/(float)TextFont.baseSize;
-            textSize.y = (float)TextFont.baseSize*scaleFactor;
+            //textSize.y = (float)TextFont.baseSize*scaleFactor;
             float glyphWidth = 0.0f;
 
             for (int i = 0, codepointSize = 0; i < size; i += codepointSize)
@@ -1232,26 +1679,32 @@ int DGuiWidget::GetTextWidth(std::string TextStr, Font TextFont, float FontSize)
 
                 if (TextFont.glyphs[codepointIndex].advanceX == 0) glyphWidth = ((float)TextFont.recs[codepointIndex].width*scaleFactor);
                 else glyphWidth = ((float)TextFont.glyphs[codepointIndex].advanceX*scaleFactor);
-
-                textSize.x += (glyphWidth + (float)GuiGetStyle(DEFAULT, TEXT_SPACING));
+                //float ts=(float)GuiGetStyle(DEFAULT, TEXT_SPACING);
+                float ts=Properties.TextSpacing;
+                textSize += (glyphWidth + ts);
             }
         }
 
-        if (textIconOffset > 0) textSize.x += (RAYGUI_ICON_SIZE - ICON_TEXT_PADDING);
-*/
+        if (textIconOffset > 0) textSize += (RAYGUI_ICON_SIZE - ICON_TEXT_PADDING);
+
     }
 
-    //return (int)textSize.x;
+    return textSize;
 }
 
-void DGuiWidget::RayGuiDrawRectangle(Rectangle rec, int borderWidth, Color borderColor, Color color)
+void DGuiWidget::RayGuiDrawRectangle(Rectangle Bounds, int BorderWidth, Color BorderColor, Color Tint)
 {
-    GuiDrawRectangle(rec,borderWidth,borderColor,color);
+    GuiDrawRectangle(Bounds,BorderWidth,BorderColor,Tint);
 }
 
-void DGuiWidget::RayGuiDrawText(const char *text, Rectangle textBounds, int alignment, Color tint)
+void DGuiWidget::RayGuiDrawText(const char *TextStr, Rectangle TextBounds, int Alignment, Color Tint)
 {
-    GuiDrawText(text,textBounds,alignment,tint);
+    GuiDrawText(TextStr,TextBounds,Alignment,Tint);
+}
+
+void DGuiWidget::RayGuiDrawText(std::string TextStr, Rectangle TextBounds, DTextAlign Alignment, Color Tint)
+{
+    GuiDrawText(TextStr.c_str(),TextBounds,Alignment.Horiz,Tint);
 }
 
 float DGuiWidget::GetGuiAlpha(void)

@@ -13,7 +13,7 @@ DGuiButton::DGuiButton(Rectangle WidgetBounds, DGuiWidget *ParentWidget, OnWidge
     DEFAULT_HEIGHT=20;
 }
 
-DGuiButton::DGuiButton(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(WidgetTree,ParentWidget,EventCallback)
+DGuiButton::DGuiButton(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(std::ref(WidgetTree),ParentWidget,EventCallback)
 {
     Ready=(Type == DBUTTON);
 }
@@ -29,8 +29,9 @@ DGuiButton::DGuiButton(const std::string& LayoutFilename, DGuiWidget* ParentWidg
  */
 void DGuiButton::Draw()
 {
-    if (GuiButton(Bounds, Text.c_str())) {
-        DWidgetEvent Event={DEventCode::BUTTON_PRESS, nullptr};
+    Rectangle AbsBounds=GetAbsBounds();
+    if (GuiButton(AbsBounds, Text.c_str())) {
+        DWidgetEvent Event={DEventCode::BUTTON_PRESS, 0, nullptr};
         SendEvent(Event);
     }
 }
