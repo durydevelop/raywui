@@ -14,7 +14,7 @@ class DGuiToggleSwitch : public DGuiToggleSlide
         void SetChecked(bool Checked);
 
     private:
-        void InitDefault(void);
+        void Finalize(void);
         bool Checked;
 
 };

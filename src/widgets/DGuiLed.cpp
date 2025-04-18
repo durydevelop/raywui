@@ -51,11 +51,12 @@ void DGuiLed::FinalizeFromTree(DTools::DTree& WidgetTree)
 
     SetSize((Radius*2)+LedPadding.Left+LedPadding.Right,(Radius*2)+LedPadding.Bottom+LedPadding.Top);
 
-    std::string CaptionText=WidgetTree.ReadString(DJsonTree::ITEM_CAPTION,DJsonTree::ITEM_TEXT,"");
-    std::string CaptionSideStr=WidgetTree.ReadString(DJsonTree::ITEM_CAPTION,DJsonTree::ITEM_SIDE,"");
-    int CaptionOffset=WidgetTree.ReadInteger(DJsonTree::ITEM_CAPTION,DJsonTree::ITEM_OFFSET,0);
-    if (!CaptionText.empty()) {
-        SetCaption(CaptionText,Properties.TextSize,NameToSide(CaptionSideStr,SIDE_LEFT),CaptionOffset);
+    std::string LabelIntText=WidgetTree.ReadString(DJsonTree::ITEM_LABEL_INT,DJsonTree::ITEM_TEXT,"");
+    std::string LabelIntSideStr=WidgetTree.ReadString(DJsonTree::ITEM_LABEL_INT,DJsonTree::ITEM_SIDE,"");
+    int LabelIntOffset=WidgetTree.ReadInteger(DJsonTree::ITEM_LABEL_INT,DJsonTree::ITEM_OFFSET,0);
+    int LabelIntFontSize=WidgetTree.ReadInteger(DJsonTree::ITEM_LABEL_INT,DJsonTree::ITEM_FONT_SIZE,0);
+    if (!LabelIntText.empty()) {
+        SetLabelInt(LabelIntText,LabelIntFontSize,NameToSide(LabelIntSideStr,SIDE_LEFT),LabelIntOffset);
     }
     std::string onc=WidgetTree.ReadString(DJsonTree::ITEM_ON_COLOR,"#FF0000"); // Red
     std::string offc=WidgetTree.ReadString(DJsonTree::ITEM_OFF_COLOR,"#808080"); //Gray
@@ -75,14 +76,24 @@ void DGuiLed::Off(void)
     SwitchTo(false);
 }
 
-void DGuiLed::SwitchTo(bool SwitchOn)
+void DGuiLed::Toggle(void) {
+    SwitchTo(!SwitchedOn);
+}
+
+void DGuiLed::SwitchTo(bool On)
 {
-    SwitchedOn=SwitchOn;
+    SwitchedOn=On;
     CurrFilledColor=SwitchedOn ? OnColor : OffColor;
 }
 
-void DGuiLed::Toggle(void) {
-    SwitchTo(!SwitchedOn);
+void DGuiLed::SwitchToColor(uint NewColor)
+{
+    CurrFilledColor=NewColor;
+}
+
+void DGuiLed::SwitchToColor(Color NewColor)
+{
+    CurrFilledColor=ColorToInt(NewColor);
 }
 
 /*
@@ -97,7 +108,7 @@ void DGuiLed::SetPos(int LeftPos, int TopPos)
 void DGuiLed::SetSize(int Width, int Height) {
     DGuiWidget::SetSize(Width,Height);
     //SetPos(Bounds.x-Radius,Bounds.y-Radius);
-    //UpdateCaption();
+    //UpdateLabelInt();
 }
 */
 void DGuiLed::SetCenter(int LeftPos, int TopPos)
@@ -105,18 +116,18 @@ void DGuiLed::SetCenter(int LeftPos, int TopPos)
     SetPos(LeftPos-Radius,TopPos-Radius);
 }
 
-/// Override: setting Caption to the left or top, led needs to move its position.
-void DGuiLed::SetCaption(std::string CaptionText, int FontSize, DSide Side, int Offset)
+/// Override: setting LabelInt to the left or top, led needs to move its position.
+void DGuiLed::SetLabelInt(std::string LabelIntText, int FontSize, DSide Side, int Offset)
 {
-    DGuiContainer::SetCaption(CaptionText,FontSize,Side,Offset);
-    if (Caption.Label) {
-        // Move led if caption is on the left/top
+    DGuiContainer::SetLabelInt(LabelIntText,FontSize,Side,Offset);
+    if (LabelInt.Label) {
+        // Move led if labelint is on the left/top
         switch (Side) {
             case SIDE_LEFT:
-                LedOffset.x=Caption.Label->GetWidth();
+                LedOffset.x=LabelInt.Label->GetWidth();
                 break;
             case SIDE_TOP:
-                LedOffset.y=Caption.Label->GetHeight();
+                LedOffset.y=LabelInt.Label->GetHeight();
                 break;
             default:
                 break;

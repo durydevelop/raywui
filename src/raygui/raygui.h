@@ -657,6 +657,7 @@ typedef enum {
     NOP,
     TEXT_EDIT_END,              // TextEdit
     KEY_ENTER_PRESSED,          // TextEdit
+    KEY_TAB_PRESSED,            // TextEdit
     MOUSE_LEFT_BUTTON_PRESSED,  // TextEdit
 } GuiWidgetResult;
 
@@ -764,7 +765,7 @@ RAYGUIAPI int GuiSpinner(Rectangle bounds, const char *text, int *value, int min
 RAYGUIAPI int GuiValueBox(Rectangle bounds, const char *text, int *value, int minValue, int maxValue, bool editMode); // Value Box control, updates input text with numbers
 RAYGUIAPI int GuiValueBoxFloat(Rectangle bounds, const char *text, char *textValue, float *value, bool editMode); // Value box control for float values
 RAYGUIAPI int GuiTextBox(Rectangle bounds, char *text, int textSize, bool editMode);                   // Text Box control, updates input text
-RAYGUIAPI int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode); // Text Box control for password mode. N.B. mainBuff is for masked view, real text is stored in shadowBuff
+RAYGUIAPI int GuiTextBoxSecret(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode); // Text Box control for password mode. N.B. mainBuff is for masked view, real text is stored in shadowBuff
 
 RAYGUIAPI int GuiSlider(Rectangle bounds, const char *textLeft, const char *textRight, float *value, float minValue, float maxValue); // Slider control
 RAYGUIAPI int GuiSliderBar(Rectangle bounds, const char *textLeft, const char *textRight, float *value, float minValue, float maxValue); // Slider Bar control
@@ -2496,12 +2497,12 @@ int GuiDropdownBox(Rectangle bounds, const char *text, int *active, bool editMod
 
 int GuiTextBox(Rectangle bounds, char *text, int textSize, bool editMode)
 {
-    return GuiTextBoxMasked(bounds,text,NULL,textSize,editMode);
+    return GuiTextBoxSecret(bounds,text,NULL,textSize,editMode);
 }
 
 // Text Box control with mask text
 // NOTE: Returns true on ENTER pressed (useful for data validation)
-int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode)
+int GuiTextBoxSecret(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode)
 {
     #if !defined(RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN)
         #define RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN  40        // Frames to wait for autocursor movement
@@ -2869,6 +2870,12 @@ int GuiTextBoxMasked(Rectangle bounds, char *mainBuff, char *shadowBuff, int tex
                 textBoxCursorIndex = 0;     // GLOBAL: Reset the shared cursor index
                 textBoxShadowCursorIndex = 0;
                 result = KEY_ENTER_PRESSED;
+            }
+            if (IsKeyPressed(KEY_TAB) && !multiline)
+            {
+                textBoxCursorIndex = 0;     // GLOBAL: Reset the shared cursor index
+                textBoxShadowCursorIndex = 0;
+                result = KEY_TAB_PRESSED;
             }
             else if (!CheckCollisionPointRec(mousePosition, bounds) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {

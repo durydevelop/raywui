@@ -17,9 +17,8 @@ class DGuiStatusBar : public DGuiWidget
         DGuiStatusBar(DTools::DTree WidgetTree, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
         DGuiStatusBar(const std::string& LayoutFilename, DGuiWidget* ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
 
-        void AddItem(std::string ItemName, int Left, int Width, std::string ItemText);
+        void AddItem(std::string ItemName, int Left, int Width, std::string ItemText, std::string StrAlignH);
         DStatusBarItem* GetItem(std::string ItemName);
-
         void SetItemText(std::string ItemName, std::string ItemText);
 
         void Draw() override;
@@ -27,7 +26,10 @@ class DGuiStatusBar : public DGuiWidget
         std::map<std::string,DStatusBarItem> Items;
 
     private:
+        void InitDefault(void);
         void FinalizeFromTree(DTools::DTree& WidgetTree);
+
+        DText Text;
 };
 
 #endif

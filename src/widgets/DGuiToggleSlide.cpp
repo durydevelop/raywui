@@ -1,5 +1,6 @@
 #include "DGuiToggleSlide.h"
 #include <dpplib/DVector.h>
+#include <DGuiLabel.h>
 //#include "raywui_log.h"
 
 DGuiToggleSlide::DGuiToggleSlide(int LeftPos, int TopPos, int ControlWidth, int ControlHeight, DGuiWidget *ParentWidget, OnWidgetEventCallback EventCallback) : DGuiWidget(DBUTTON,LeftPos,TopPos,ControlWidth,ControlHeight,ParentWidget,EventCallback)
@@ -36,8 +37,23 @@ void DGuiToggleSlide::InitDefault(void)
 
 void DGuiToggleSlide::FinalizeFromTree(DTools::DTree& WidgetTree)
 {
+    // Init text
+    Text.InitFromTree(WidgetTree);
+    if (LabelExt.Label) {
+        if (LabelExt.Label->GetFontSize() < 0) {
+            // Label font size from parent
+            LabelExt.Label->SetFontSize(Text.GetFontSize(),false);
+        }
+    }
+    
     // ** Read class specific properties **
-    Items=WidgetTree.ReadArrayNames("Items");
+    std::vector<std::string> ItemsNames=WidgetTree.ReadArrayNames(DJsonTree::SEC_ITEMS);
+    for (auto ItemName : ItemsNames) {
+        TextItems.emplace_back(ItemName);
+    }
+    Text.Text=DTools::DVector::JoinToStr(ItemsNames,"");
+
+    Update();
 }
 
 /**
@@ -45,9 +61,10 @@ void DGuiToggleSlide::FinalizeFromTree(DTools::DTree& WidgetTree)
  * 
  * @param Text 
  */
-void DGuiToggleSlide::AddItem(const std::string &Text)
+void DGuiToggleSlide::AddItem(const std::string &ItemText)
 {
-    Items.emplace_back(Text);
+    TextItems.emplace_back(ItemText);
+    Text.Text=DTools::DVector::JoinToStr(TextItems,"");
 }
 
 /**
@@ -58,6 +75,7 @@ void DGuiToggleSlide::AddItem(const std::string &Text)
 void DGuiToggleSlide::SetItemIndex(int Index)
 {
     ItemIndex=Index < 0 ? 0 : Index;
+    Text.Text=DTools::DVector::JoinToStr(TextItems,"");
 }
 
 /**
@@ -82,16 +100,24 @@ void DGuiToggleSlide::SetSliderPadding(int Padding)
  */
 void DGuiToggleSlide::Draw()
 {
-    if (!Items.empty()) {
-        int CurrPadding=GuiGetStyle(SLIDER,SLIDER_PADDING);
-        GuiSetStyle(SLIDER, SLIDER_PADDING, SliderPadding);
+    // Store current global raygui styles
+    BackupCurrentTextStyle(TempText);
+    // Set global raygui style from this->Properties
+    UpdateCurrentTextStyle(Text);
+
+    if (!TextItems.empty()) {
+        //int CurrPadding=GuiGetStyle(SLIDER,SLIDER_PADDING);
+        //GuiSetStyle(SLIDER, SLIDER_PADDING, SliderPadding);
         Rectangle AbsBounds=GetAbsBounds();
         if (DrawToggleSlider(AbsBounds,&ItemIndex)) {
             DWidgetEvent Event = { DEventCode::TOGGLE_CHANGED, ItemIndex, reinterpret_cast<void *>(static_cast<intptr_t>(ItemIndex)) };
             SendEvent(Event);
         }
-        GuiSetStyle(SLIDER, SLIDER_PADDING, CurrPadding);
+        //GuiSetStyle(SLIDER, SLIDER_PADDING, CurrPadding);
     }
+
+    // Restore previous saved global raygui styles
+    RestoreCurrentTextStyle(TempText);
 }
 
 /// @todo? Gui control property style color element from raygui (no other way nor now)
@@ -111,7 +137,7 @@ int DGuiToggleSlide::DrawToggleSlider(Rectangle bounds, int *active)
     Rectangle slider = {
         0,      // Calculated later depending on the active toggle
         bounds.y + GuiGetStyle(SLIDER, BORDER_WIDTH) + GuiGetStyle(SLIDER, SLIDER_PADDING),
-        (bounds.width - 2*GuiGetStyle(SLIDER, BORDER_WIDTH) - (Items.size() + 1)*GuiGetStyle(SLIDER, SLIDER_PADDING))/Items.size(),
+        (bounds.width - 2*GuiGetStyle(SLIDER, BORDER_WIDTH) - (TextItems.size() + 1)*GuiGetStyle(SLIDER, SLIDER_PADDING))/TextItems.size(),
         bounds.height - 2*GuiGetStyle(SLIDER, BORDER_WIDTH) - 2*GuiGetStyle(SLIDER, SLIDER_PADDING)
     };
 
@@ -136,7 +162,7 @@ int DGuiToggleSlide::DrawToggleSlider(Rectangle bounds, int *active)
         if ((*active) && (state != STATE_FOCUSED)) state = STATE_PRESSED;
     }
 
-    if (*active >= Items.size()) *active = 0;
+    if (*active >= TextItems.size()) *active = 0;
     slider.x = bounds.x + GuiGetStyle(SLIDER, BORDER_WIDTH) + (*active + 1)*GuiGetStyle(SLIDER, SLIDER_PADDING) + (*active)*slider.width;
     //--------------------------------------------------------------------
 
@@ -149,14 +175,14 @@ int DGuiToggleSlide::DrawToggleSlider(Rectangle bounds, int *active)
     else if (state == STATE_FOCUSED) RayGuiDrawRectangle(slider, 0, BLANK, GetColor(GuiGetStyle(SLIDER, BASE_COLOR_FOCUSED)));
     else if (state == STATE_PRESSED) RayGuiDrawRectangle(slider, 0, BLANK, GetColor(GuiGetStyle(SLIDER, BASE_COLOR_PRESSED)));
 
-    // Draw text in slider
+    // Draw text in slider @todo: GetTextBounds()
     Rectangle textBounds = { 0 };
-    textBounds.width = (float)GetTextWidth(DTools::DVector::JoinToStr(Items,";"),GuiGetFont(),Properties.TextSize);
-    textBounds.height = (float)GuiGetStyle(DEFAULT, TEXT_SIZE);
+    textBounds.width = (float) GetTextWidth(DTools::DVector::JoinToStr(TextItems," "),Text.TextFont,Text.FontSize,Text.Spacing);
+    textBounds.height = (float) Text.GetFontSize();
     textBounds.x = slider.x + slider.width/2 - textBounds.width/2;
-    textBounds.y = bounds.y + bounds.height/2 - GuiGetStyle(DEFAULT, TEXT_SIZE)/2;
+    textBounds.y = bounds.y + bounds.height/2 - textBounds.height/2;
 
-    RayGuiDrawText(Items[*active].c_str(), textBounds, GuiGetStyle(TOGGLE, TEXT_ALIGNMENT), Fade(GetColor(GuiGetStyle(TOGGLE, TEXT + (state*3))), GetGuiAlpha()));
+    RayGuiDrawText(TextItems[*active].c_str(), textBounds, GuiGetStyle(TOGGLE, TEXT_ALIGNMENT), Fade(GetColor(GuiGetStyle(TOGGLE, TEXT + (state*3))), GetGuiAlpha()));
     //--------------------------------------------------------------------
 
     return result;

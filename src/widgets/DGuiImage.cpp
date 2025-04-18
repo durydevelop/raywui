@@ -49,7 +49,7 @@ void DGuiImage::SetScale(float ScaleFactor)
         Bounds.height=(float)imageTexture.height*ScaleValue;
     }
 
-    UpdateLabel();
+    Update();
 }
 
 void DGuiImage::InitDefault(void)
@@ -72,7 +72,7 @@ void DGuiImage::FinalizeFromTree(DTools::DTree& WidgetTree)
     if (!Filename.empty()) {
         LoadFromFile(Filename);
     }
-    UpdateLabel();
+    Update();
 }
 
 /**

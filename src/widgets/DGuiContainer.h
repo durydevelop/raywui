@@ -28,11 +28,13 @@ struct DRefWindow {
 */
 class DGuiContainer : public DGuiWidget {
     public:
-        struct DCaption {
+        /*
+        struct DLabelInt {
             DGuiLabel *Label=nullptr;
             DSide Side=SIDE_LEFT;
             int Offset=5;
         };
+        */
 
         DGuiContainer(int LeftPos, int TopPos, int ContainerWidth, int ContainerHeight, DGuiWidget *ParentWidget);
         DGuiContainer(Rectangle ContainerBounds, DGuiWidget *ParentWidget);
@@ -40,18 +42,20 @@ class DGuiContainer : public DGuiWidget {
         DGuiContainer(const std::string& LayoutFilename, DGuiWidget *ParentWidget, OnWidgetEventCallback EventCallback = nullptr);
         ~DGuiContainer();
 
-        virtual void SetCaption(std::string CaptionText, int FontSize, DSide Side, int Offset);
-        void UpdateCaption(void);
-        void UnsetCaption(void);
+        virtual void SetLabelInt(std::string LabelIntText, int FontSize, DSide Side, int Offset);
+        void UpdateLabelInt(void);
+        void UnsetLabelInt(void);
 
         DGuiWidget* AddWidget(DGuiWidget *Widget);
         DGuiWidget* AddWidget(DTools::DTree *WidgetTree);
-
+        int GetAllWidgets(std::vector<DGuiWidget*>& WidgetList);
         DGuiWidget* FindWidgetById(std::string ChildId);
+        void SetTextInt(std::string NewText);
 
 
         void SetOnGuiEvent(OnGuiEventCallback Callback) override;
         DGuiWidget* FindWidgetByName(std::string ChildName) override;
+        void SetDebugView(bool Enabled) override;
         void Draw(void) override;
 
         // Using vector to handle Z-Order
@@ -59,7 +63,7 @@ class DGuiContainer : public DGuiWidget {
         std::map<std::string, DGuiWidget*> Children;
 
     protected:
-       DCaption Caption;
+       DWidgetLabel LabelInt;
 
     private:
         void FinalizeFromTree(DTools::DTree& WidgetTree);

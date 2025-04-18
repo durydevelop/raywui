@@ -94,6 +94,18 @@ DGuiWidget* DGuiContainer::AddWidget(DTools::DTree *WidgetTree)
     return AddWidget(Widget);
 }
 
+int DGuiContainer::GetAllWidgets(std::vector<DGuiWidget*>& WidgetList)
+{
+    for (auto& [Id,Child] : Children) {
+        if (Child->GetWidgetType() == DWidgetType::DCONTAINER) {
+            DGuiContainer *c=(DGuiContainer *) Child;
+            c->GetAllWidgets(WidgetList);
+        }
+        WidgetList.emplace_back(Child);
+    }
+    return WidgetList.size();
+}
+
 DGuiWidget* DGuiContainer::FindWidgetById(std::string ChildId) {
     for (auto& [Id,Child] : Children) {
         if (Child->GetWidgetType() == DWidgetType::DCONTAINER) {
@@ -130,131 +142,146 @@ bool DGuiContainer::UpdateAnchor(void)
 {
     DGuiWidget::UpdateAnchor();
 
-    if (Caption.Label) {
-        UpdateCaption();
+    if (LabelInt.Label) {
+        UpdateLabelInt();
     }
 }
 */
 /**
- * @brief Create Caption widget. Caption is an inside label and can only be anchored to on of the contained sides.
- * Differently from label, setting caption, will increase parent container sizes.
+ * @brief Create LabelInt widget. LabelInt is an inside label and can only be anchored to on of the contained sides.
+ * Differently from label, setting labelint, will increase parent container sizes.
  * 
- * @param CaptionText   ->  Text of the caption.
+ * @param LabelIntText   ->  Text of the labelint.
  * @param FontSize      ->  Font size
  * @param Side          ->  Specify the side inside the container to be ancored.
- * @param Offset        ->  Specify the distance from the widget to which is making the caption, e.g.: if Side is SIDE_LEFT, Offset is the distance from right of caption to the widget.
+ * @param Offset        ->  Specify the distance from the widget to which is making the labelint, e.g.: if Side is SIDE_LEFT, Offset is the distance from right of labelint to the widget.
  */
-void DGuiContainer::SetCaption(std::string CaptionText, int FontSize, DSide Side, int Offset)
+void DGuiContainer::SetLabelInt(std::string LabelIntText, int FontSize, DSide Side, int Offset)
 {
-    if (CaptionText.empty()) {
-        UnsetCaption();
+    if (LabelIntText.empty()) {
+        UnsetLabelInt();
         return;
     }
 
-    if (!Caption.Label) {
-        Caption.Label=new DGuiLabel(this);
+    if (!LabelInt.Label) {
+        LabelInt.Label=new DGuiLabel(this);
     }
 
-    Caption.Label->SetText(CaptionText,false);
-    Caption.Label->SetTextSize(FontSize,true);
-    Caption.Side=Side;
-    Caption.Offset=Offset;
+    LabelInt.Label->SetText(LabelIntText,false);
+    LabelInt.Label->SetFontSize(FontSize,true);
+    LabelInt.Side=Side;
+    LabelInt.OffsetX=Offset;
+    LabelInt.OffsetY=Offset;
 
-    UpdateCaption();
+    UpdateLabelInt();
 }
 
-void DGuiContainer::UpdateCaption(void)
+void DGuiContainer::UpdateLabelInt(void)
 {
-    if (!Caption.Label) {
+    if (!LabelInt.Label) {
         return;
     }
 
-    switch (Caption.Side) {
+    switch (LabelInt.Side) {
         case SIDE_BOTTOM:
             // Add offset
-            Caption.Label->SetHeight(Caption.Label->Bounds.height+Caption.Offset);
+            LabelInt.Label->SetHeight(LabelInt.Label->Bounds.height+LabelInt.OffsetY);
             // Align text to bottom
-            Caption.Label->Properties.TextAlign.Vert=DTextAlignV::TEXT_ALIGN_VBOTTOM;
+            LabelInt.Label->Text.Align.Vert=DTextAlignV::TEXT_ALIGN_VBOTTOM;
             // Set position
-            Caption.Label->Bounds.x=(Bounds.width-Caption.Label->Bounds.width)/2; // Center horizzontally
-            Caption.Label->Bounds.y=Bounds.height-Caption.Label->Bounds.height;
+            LabelInt.Label->Bounds.x=(Bounds.width-LabelInt.Label->Bounds.width)/2; // Center horizzontally
+            LabelInt.Label->Bounds.y=Bounds.height-LabelInt.Label->Bounds.height;
             // Increase parent height
-            Bounds.height+=Caption.Label->Bounds.height;
+            Bounds.height+=LabelInt.Label->Bounds.height;
             break;
         case SIDE_TOP:
             // Add offset
-            Caption.Label->SetHeight(Caption.Label->Bounds.height+Caption.Offset);
+            LabelInt.Label->SetHeight(LabelInt.Label->Bounds.height+LabelInt.OffsetY);
             // Align text to top
-            Caption.Label->Properties.TextAlign.Vert=DTextAlignV::TEXT_ALIGN_VTOP;
+            LabelInt.Label->Text.Align.Vert=DTextAlignV::TEXT_ALIGN_VTOP;
             // Set position
-            Caption.Label->Bounds.x=(Bounds.width-Caption.Label->Bounds.width)/2; // Center horizzontally
-            Caption.Label->Bounds.y=0;
+            LabelInt.Label->Bounds.x=(Bounds.width-LabelInt.Label->Bounds.width)/2; // Center horizzontally
+            LabelInt.Label->Bounds.y=0;
             // Increase parent height
-            Bounds.height+=Caption.Label->Bounds.height;
+            Bounds.height+=LabelInt.Label->Bounds.height;
             break;
         case SIDE_LEFT:
             // Add offset
-            Caption.Label->SetWidth(Caption.Label->Bounds.width+Caption.Offset);
+            LabelInt.Label->SetWidth(LabelInt.Label->Bounds.width+LabelInt.OffsetX);
             // Align text to left
-            Caption.Label->Properties.TextAlign.Horiz=DTextAlignH::TEXT_ALIGN_HLEFT;
+            LabelInt.Label->Text.Align.Horiz=DTextAlignH::TEXT_ALIGN_HLEFT;
             // Set position
-            Caption.Label->Bounds.x=0;
-            Caption.Label->Bounds.y=(Bounds.height-Caption.Label->Bounds.height)/2; // Center vertically
+            LabelInt.Label->Bounds.x=0;
+            LabelInt.Label->Bounds.y=(Bounds.height-LabelInt.Label->Bounds.height)/2; // Center vertically
             // Increase parent width
-            Bounds.width+=Caption.Label->Bounds.width;
+            Bounds.width+=LabelInt.Label->Bounds.width;
             break;
         case SIDE_RIGHT:
             // Add offset
-            Caption.Label->SetWidth(Caption.Label->Bounds.width+Caption.Offset);
+            LabelInt.Label->SetWidth(LabelInt.Label->Bounds.width+LabelInt.OffsetX);
             // Align text to right
-            Caption.Label->Properties.TextAlign.Horiz=DTextAlignH::TEXT_ALIGN_HRIGHT;
+            LabelInt.Label->Text.Align.Horiz=DTextAlignH::TEXT_ALIGN_HRIGHT;
             // Set position
-            Caption.Label->Bounds.x=Bounds.width;
-            Caption.Label->Bounds.y=(Bounds.height-Caption.Label->Bounds.height)/2; // Center vertically
+            LabelInt.Label->Bounds.x=Bounds.width;
+            LabelInt.Label->Bounds.y=(Bounds.height-LabelInt.Label->Bounds.height)/2; // Center vertically
             // Increase parent width
-            Bounds.width+=Caption.Label->Bounds.width;
+            Bounds.width+=LabelInt.Label->Bounds.width;
             break;
         default:
             break;
     }
 
-    //Caption.Label->SetBorderVisible(true);
+    //LabelInt.Label->SetBorderVisible(true);
 }
 
-void DGuiContainer::UnsetCaption(void)
+void DGuiContainer::SetTextInt(std::string NewText)
 {
-    if (!Caption.Label) {
+    LabelInt.Label->SetText(NewText);
+}
+
+void DGuiContainer::UnsetLabelInt(void)
+{
+    if (!LabelInt.Label) {
         return;
     }
 
-    switch (Caption.Side) {
+    switch (LabelInt.Side) {
         case SIDE_BOTTOM:
             // Resize parent height
-            Bounds.height-=Caption.Label->Bounds.height;
+            Bounds.height-=LabelInt.Label->Bounds.height;
             break;
         case SIDE_TOP:
             // Resize parent height
-            Bounds.height-=Caption.Label->Bounds.height;
+            Bounds.height-=LabelInt.Label->Bounds.height;
             break;
         case SIDE_LEFT:
             // Resize parent width
-            Bounds.width-=Caption.Label->Bounds.width;
+            Bounds.width-=LabelInt.Label->Bounds.width;
             break;
         case SIDE_RIGHT:
             // Resize parent width
-            Bounds.width-=Caption.Label->Bounds.width;
+            Bounds.width-=LabelInt.Label->Bounds.width;
             break;
         default:
             break;
     }
 
-    delete Caption.Label;
-    Caption.Label=nullptr;
+    delete LabelInt.Label;
+    LabelInt.Label=nullptr;
+}
+
+void DGuiContainer::SetDebugView(bool Enabled)
+{
+    DGuiWidget::SetDebugView(Enabled);
+
+    if (LabelInt.Label) {
+        LabelInt.Label->SetDebugView(Enabled);
+    }
 }
 
 void DGuiContainer::Draw(void) {
-    if (Caption.Label) {
-        Caption.Label->Draws();
+    if (LabelInt.Label) {
+        LabelInt.Label->Draws();
     }
 
     for (auto [Name,Widget] : Children) {

@@ -14,12 +14,15 @@ Features:
 
 Current widgets:
 
-* [x] DGuiContainer
 * [x] DGuiButton
+* [x] DGuiContainer
 * [x] DGuiEdit
-* [x] DGuiLabel
-* [x] DGuiStatusBar
 * [x] DGuiImage
+* [x] DGuiLabel
+* [x] DGuiLed
+* [x] DGuiStatusBar
+* [x] DGuiToggleSlide
+* [x] DGuiToggleSwitch
 * [ ] DGuiCheckBox
 
 ## **WARNING: this lib it is under development: no alpha release yet**
