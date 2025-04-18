@@ -14,10 +14,12 @@ struct DJsonTree {
             inline static const std::string SEC_DYNAMIC="Dynamic";
 
             inline static const std::string ITEM_NAME="Name";
+            inline static const std::string ITEM_ANCHORS="Anchors";
             inline static const std::string ITEM_ANCHOR="Anchor";
             inline static const std::string ITEM_TYPE="Type";
             inline static const std::string ITEM_TEXT="Text";
-            inline static const std::string ITEM_TEXT_SIZE="TextSize";
+            //inline static const std::string ITEM_TEXT_SIZE="TextSize"; /// @todo deprecate
+            inline static const std::string ITEM_FONT_SIZE="FontSize";
             inline static const std::string ITEM_TEXT_SIDE="TextSide";
             inline static const std::string ITEM_TEXT_COLOR="TextColor";
             inline static const std::string ITEM_TEXT_SPACING="TextSpacing";
@@ -45,6 +47,8 @@ struct DJsonTree {
             inline static const std::string ITEM_PARENT_ALIGN="ParentAlign";
             inline static const std::string ITEM_SIZE="Size";
             inline static const std::string ITEM_OFFSET="Offset";
+            inline static const std::string ITEM_OFFSET_X="OffsetX";
+            inline static const std::string ITEM_OFFSET_Y="OffsetY";
             inline static const std::string ITEM_BOUNDS="Bounds";
             inline static const std::string ITEM_READ_ONLY="ReadOnly";
             inline static const std::string ITEM_PASSWORD_MODE="PasswordMode";
@@ -68,7 +72,8 @@ struct DJsonTree {
             inline static const std::string ITEM_LEFT_OF="LeftOf";
             inline static const std::string ITEM_BOTTOM_OF="BottomOf";
             inline static const std::string ITEM_TOP_OF="TopOf";
-            inline static const std::string ITEM_CAPTION="Caption";
+            inline static const std::string ITEM_LABEL_EXT="LabelExt";
+            inline static const std::string ITEM_LABEL_INT="LabelInt";
             inline static const std::string ITEM_PADDING="Padding";
 
             inline static const std::string VALUE_BOTTOM="Bottom";
@@ -112,7 +117,7 @@ typedef enum {
 enum DDocking { DOCK_HCENTER=-7, DOCK_VCENTER=-6, DOCK_CENTER=-5, DOCK_TOP=-4, DOCK_BOTTOM=-3, DOCK_RIGHT=-2, DOCK_LEFT=-1 };
 enum DSide { SIDE_LEFT = DOCK_LEFT, SIDE_RIGHT = DOCK_RIGHT, SIDE_BOTTOM = DOCK_BOTTOM, SIDE_TOP = DOCK_TOP, SIDE_CUSTOM = 0}; /// Generic side
 enum DAnchorSide { ANCHOR_NONE, ANCHOR_RIGHT_OF, ANCHOR_LEFT_OF, ANCHOR_BOTTOM_OF, ANCHOR_TOP_OF };
-enum DWidthMode { WIDTH_AUTO=-2, WIDTH_PARENT=-1, WIDTH_DEFAULT=0 };
+enum DSizeMode { SIZE_AUTO=-2, SIZE_PARENT=-1, SIZE_DEFAULT=0, SIZE_FIX=1 };
 enum DAlign {
     ALIGH_NONE=    0b0000000,
     ALIGN_LEFT=    0b0000001,

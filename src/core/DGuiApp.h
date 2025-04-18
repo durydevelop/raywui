@@ -4,9 +4,11 @@
 #include "DGuiCommon.h"
 #include <DGuiWidget.h>
 #include <dpplib/DPreferences.h>
+#include <dpplib/DChrono.h>
 #include <functional>
 #include <string>
 #include <memory>
+#include <DGuiContainer.h>
 
 class DGuiContainer;
 
@@ -42,6 +44,21 @@ class DCanvas {
 
 };
 
+class DTimerEvent {
+    public:
+        DTimerEvent(std::string TimerName, unsigned long EventIntervalMs, std::function<void (void)> EventCallback) {
+            Name=TimerName;
+            IntervalMs=EventIntervalMs;
+            LastTime=DTools::DChrono::NowMillis();
+            Callback=EventCallback;
+        }
+        
+        std::string Name;
+        unsigned long IntervalMs;
+        unsigned long LastTime;
+        std::function<void (void)> Callback;
+};
+
 class DGuiApp
 {
     public:
@@ -61,6 +78,7 @@ class DGuiApp
         DGuiWidget* SetCurrDynamic(DGuiWidget *Widget);
         DGuiWidget* SetCurrDynamic(std::string WidgetName);
         DGuiWidget* FindWidgetByName(std::string WidgetName);
+        int GetAllWidgets(std::vector<DGuiWidget*>& WidgetList);
 
         void ClearScreen(void);
         DResult Run(void);
@@ -71,6 +89,8 @@ class DGuiApp
         void SetOnAppStarted(std::function<void (void)> Callback = 0);
         void SetOnAppStopped(std::function<void (void)> Callback = 0);
         void SetOnTick(std::function<void (void)> Callback = 0);
+        size_t AddTimerEvent(std::string Name, unsigned long IntervalMs, std::function<void (void)> Callback);
+        bool DeleteTimerEvent(std::string Name);
 
         bool Running;
         //bool ShouldClearScreen;   //! If true screeen will be cleared at next draw
@@ -83,6 +103,7 @@ class DGuiApp
         }CurrDynamic;
         //DCurrWidget CurrWidget;
         DCanvas Canvas;
+        std::vector<DTimerEvent> Timers;
         
     private:
         // Event callbacks

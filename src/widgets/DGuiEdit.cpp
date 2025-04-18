@@ -1,13 +1,9 @@
 #include "DGuiEdit.h"
 #include "raywui_log.h"
 #include <string.h>
-// Defined here because DGuiEdit::DrawTextBox() is a custom implementation of GuiTextBox()
-//#define RAYGUI_IMPLEMENTATION
-//#include <raygui.h>
+#include <DGuiLabel.h>
 
 #define DEFAULT_MAX_TEXT_LENGHT 128
-
-//bool DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode, DWidgetEvent& EventData);
 
 const char TAG[9]="DGuiEdit";
 
@@ -43,14 +39,17 @@ DGuiEdit::~DGuiEdit()
 
 void DGuiEdit::InitDefault(void)
 {
-    EditMode=false;
+    Focus.Enable=true;
     ReadOnly=false;
     PasswordMode=false;
     MaxTextLenght=DEFAULT_MAX_TEXT_LENGHT;
     ViewBuff=new char[MaxTextLenght+1];
     memset(ViewBuff,'\0',MaxTextLenght+1);
     HideBuff=nullptr;
-    TextBoxShadowCursorIndex=0;
+    CursorIndex=0;
+    ShadowCursorIndex=0;
+    AutoCursorCooldownCounter=0;
+    AutoCursorDelayCounter=0;
     DEFAULT_SIDE_SIZE=50;
     DEFAULT_WIDTH=50;
     DEFAULT_HEIGHT=20;
@@ -58,6 +57,16 @@ void DGuiEdit::InitDefault(void)
 
 void DGuiEdit::FinalizeFromTree(DTools::DTree& WidgetTree)
 {
+    // Init text
+    Text.InitFromTree(WidgetTree);
+/*
+    if (LabelExt.Label) {
+        if (LabelExt.Label->GetFontSize() < 0) {
+            // Label font size from parent
+            LabelExt.Label->SetFontSize(Text.GetFontSize(),false);
+        }
+    }
+*/
     // ** Read class specific properties **
     // ReadOnly
     bool ro=WidgetTree.ReadBool(DJsonTree::ITEM_READ_ONLY,false);
@@ -67,6 +76,8 @@ void DGuiEdit::FinalizeFromTree(DTools::DTree& WidgetTree)
     SetPasswordMode(pm);
     // MaxTextLenght
     SetMaxTextLenght(WidgetTree.ReadInteger(DJsonTree::ITEM_MAX_TEXT_LENGHT,0));
+
+    UpdateSize();
 }
 
 /**
@@ -90,7 +101,7 @@ void DGuiEdit::SetMaxTextLenght(size_t NewLenght)
     if (PasswordMode) {
         // In password mode real text buffer is HideBuff
         // Store
-        Text.assign(HideBuff);
+        Text.Text.assign(HideBuff);
         // reallocate buffer
         if (HideBuff) {
             delete HideBuff;
@@ -98,7 +109,7 @@ void DGuiEdit::SetMaxTextLenght(size_t NewLenght)
         HideBuff=new char[MaxTextLenght+1];
         memset(HideBuff,'\0',MaxTextLenght+1);
         // re-assign
-        strcpy(HideBuff,Text.c_str());
+        strcpy(HideBuff,Text.Text.c_str());
 
         // ViewBuff is used for masked view
         delete ViewBuff;
@@ -108,13 +119,13 @@ void DGuiEdit::SetMaxTextLenght(size_t NewLenght)
     else {
         // NO password mode (only ViewBuff is used)
         // Store
-        Text.assign(ViewBuff);
+        Text.Text.assign(ViewBuff);
         // reallocate buffer
         delete ViewBuff;
         ViewBuff=new char[MaxTextLenght+1];
         memset(ViewBuff,'\0',MaxTextLenght+1);
         // re-assign
-        strcpy(ViewBuff,Text.c_str());
+        strcpy(ViewBuff,Text.Text.c_str());
     }
 }
 
@@ -149,15 +160,15 @@ void DGuiEdit::SetPasswordMode(bool Enabled)
         // Copy real text in HideBuff
         strcpy(HideBuff,ViewBuff);
         // set cursor index
-        TextBoxShadowCursorIndex=GetGuiTextBoxCursorIndex();
+//        TextBoxShadowCursorIndex=GetGuiTextBoxCursorIndex();
         // Set ViewBuff with '*'
         memset(ViewBuff,'*',strlen(HideBuff));
         // Ri-calculate index position in ViewBuff
         int prevCodepointSize = 0;
         int index=0;
         // Move backward text from cursor position
-        for (int i = (TextBoxShadowCursorIndex - prevCodepointSize); i < strlen(HideBuff); i++) {
-            GetCodepointPrevious(HideBuff + TextBoxShadowCursorIndex, &prevCodepointSize);
+        for (int i = (ShadowCursorIndex - prevCodepointSize); i < strlen(HideBuff); i++) {
+            GetCodepointPrevious(HideBuff + ShadowCursorIndex, &prevCodepointSize);
             index++;
         }
         SetGuiTextBoxCursorIndex(index);
@@ -171,8 +182,9 @@ void DGuiEdit::SetPasswordMode(bool Enabled)
             delete HideBuff;
         }
         HideBuff=nullptr;
-        SetGuiTextBoxCursorIndex(TextBoxShadowCursorIndex);
-        TextBoxShadowCursorIndex=0;
+//        SetGuiTextBoxCursorIndex(TextBoxShadowCursorIndex);
+        CursorIndex=ShadowCursorIndex;
+        ShadowCursorIndex=0;
     }
 
     PasswordMode=Enabled;
@@ -183,9 +195,9 @@ bool DGuiEdit::GetPasswordMode(void)
     return PasswordMode;
 }
 
-void DGuiEdit::SetFocus(void)
+void DGuiEdit::SetFocus(bool Enabled)
 {
-    EditMode=true;
+    //EditMode=Enabled;
 }
 
 void DGuiEdit::ClearText(void)
@@ -194,23 +206,23 @@ void DGuiEdit::ClearText(void)
     memset(ViewBuff,'\0',MaxTextLenght+1);
     if (HideBuff) {
         memset(HideBuff,'\0',MaxTextLenght+1);
-        TextBoxShadowCursorIndex=0;
+        ShadowCursorIndex=0;
     }
-    Text.clear();
+    Text.Text.clear();
 }
 
 const std::string& DGuiEdit::GetText(void)
 {
     if (HideBuff) {
         // Password mode
-        Text.assign(HideBuff);    
+        Text.Text.assign(HideBuff);    
     }
     else {
         // Normal mode
-        Text.assign(ViewBuff);
+        Text.Text.assign(ViewBuff);
     }
     
-    return Text;
+    return Text.Text;
 }
 
 /**
@@ -238,7 +250,7 @@ void DGuiEdit::SetText(std::string NewText, bool ForceAutoSize)
             return;
         }
         strcpy(HideBuff,NewText.c_str());
-        Text.assign(HideBuff);
+        Text.Text.assign(HideBuff);
     }
     else {
         // NormalMode
@@ -247,7 +259,7 @@ void DGuiEdit::SetText(std::string NewText, bool ForceAutoSize)
             return;
         }
         strcpy(ViewBuff,NewText.c_str());
-        Text.assign(ViewBuff);
+        Text.Text.assign(ViewBuff);
     }
 
     if (ForceAutoSize) {
@@ -258,28 +270,28 @@ void DGuiEdit::SetText(std::string NewText, bool ForceAutoSize)
 void DGuiEdit::UpdateSize(void)
 {
     // Expand due to the padding and border
-    if (Text.empty()) {
+    if (Text.Text.empty()) {
         return;
     }
-    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
+    int TextOffset=Properties.BorderWidth+Text.Padding;
     SetWidth(GetTextBounds().width+(TextOffset*2));
-    SetHeight(Properties.TextSize+(TextOffset*2));
+    SetHeight(Text.FontSize+(TextOffset*2));
 }
 
 Rectangle DGuiEdit::GetTextBounds(void)
 {
     // Measure text
     /// @todo UpdateTextWith() when text changes
-    int TextWidth=GetTextWidth(Text,Properties.TextFont,Properties.TextSize);
+    int TextWidth=GetTextWidth(Text.Text);
     
     // Calculate text bounds
-    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
+    int TextOffset=Properties.BorderWidth+Text.Padding;
     Rectangle AbsBounds=GetAbsBounds();
     Rectangle TextBounds;
     TextBounds.x=AbsBounds.x+TextOffset;
     TextBounds.y=AbsBounds.y+TextOffset;
     TextBounds.width=TextWidth;
-    TextBounds.height=Properties.TextSize;
+    TextBounds.height=Text.FontSize;
 
     return TextBounds;
 }
@@ -294,19 +306,28 @@ bool DGuiEdit::IsEmpty(void) {
         return (strlen(ViewBuff) == 0);
     }
 }
+int DGuiEdit::GetTextWidth(std::string TextStr)
+{
+    return DGuiWidget::GetTextWidth(TextStr,Text.TextFont,Text.FontSize,Text.Spacing);
+}
 
 /**
  * @brief Draw the Edit TextBox.
  */
 void DGuiEdit::Draw()
 {
+    // Store current global raygui styles
+    BackupCurrentTextStyle(TempText);
+    // Set global raygui style from this->Properties
+    UpdateCurrentTextStyle(Text);
+
     bool CurrReadOnly=GuiGetStyle(Type,TEXT_READONLY);
     GuiSetStyle(Type,TEXT_READONLY,ReadOnly);
 
     int eventData;
-    int ret=GuiTextBoxMasked(GetAbsBounds(),ViewBuff,HideBuff,MaxTextLenght,EditMode);
+    int ret=DrawTextBox(GetAbsBounds(),ViewBuff,HideBuff,MaxTextLenght);
     if (ret) {
-        if (EditMode) {
+        if (Focus.Enabled) {
             /// @todo switch case
             if (ret == EDIT_END) {
                 SendEvent(DWidgetEvent({EDIT_END,0}));
@@ -315,11 +336,453 @@ void DGuiEdit::Draw()
             else if (ret == KEY_ENTER_PRESSED) {
                 SendEvent(DWidgetEvent({KEY_PRESSED,KEY_ENTER}));
             }
+            else if (ret == KEY_TAB_PRESSED) {
+                SendEvent(DWidgetEvent({KEY_PRESSED,KEY_TAB}));
+            }
         }
-        EditMode=!EditMode;
+        //EditMode=!EditMode;
     }
 
     GuiSetStyle(Type,TEXT_READONLY,CurrReadOnly);
+
+    // Restore previous saved global raygui styles
+    RestoreCurrentTextStyle(TempText);
+}
+
+int DGuiEdit::DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize)
+{
+    #if !defined(RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN)
+        #define RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN  40        // Frames to wait for autocursor movement
+    #endif
+    #if !defined(RAYGUI_TEXTBOX_AUTO_CURSOR_DELAY)
+        #define RAYGUI_TEXTBOX_AUTO_CURSOR_DELAY      1        // Frames delay for autocursor movement
+    #endif
+
+    int result = 0;
+    //GuiState state = guiState;
+
+    bool multiline = false;     // TODO: Consider multiline text input
+    int wrapMode = GuiGetStyle(DEFAULT, TEXT_WRAP_MODE);
+
+    Rectangle textBounds = GetTextBounds();
+    int textWidth = GetTextWidth(mainBuff) - GetTextWidth(mainBuff + CursorIndex);
+    int textIndexOffset = 0;    // Text index offset to start drawing in the box
+
+    // Cursor rectangle
+    // NOTE: Position X value should be updated
+    Rectangle cursor = {
+        textBounds.x + textWidth + GuiGetStyle(DEFAULT, TEXT_SPACING),
+        textBounds.y + textBounds.height/2 - GuiGetStyle(DEFAULT, TEXT_SIZE),
+        2,
+        (float)GuiGetStyle(DEFAULT, TEXT_SIZE)*2
+    };
+
+    if (cursor.height >= bounds.height) cursor.height = bounds.height - GuiGetStyle(TEXTBOX, BORDER_WIDTH)*2;
+    if (cursor.y < (bounds.y + GuiGetStyle(TEXTBOX, BORDER_WIDTH))) cursor.y = bounds.y + GuiGetStyle(TEXTBOX, BORDER_WIDTH);
+
+    // Mouse cursor rectangle
+    // NOTE: Initialized outside of screen
+    Rectangle mouseCursor = cursor;
+    mouseCursor.x = -1;
+    mouseCursor.width = 1;
+
+    // Auto-cursor movement logic
+    // NOTE: Cursor moves automatically when key down after some time
+    if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_UP) || IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_BACKSPACE) || IsKeyDown(KEY_DELETE)) AutoCursorCooldownCounter++;
+    else
+    {
+        AutoCursorCooldownCounter = 0;      // GLOBAL: Cursor cooldown counter
+        AutoCursorDelayCounter = 0;         // GLOBAL: Cursor delay counter
+    }
+
+    // Blink-cursor frame counter
+    //if (!autoCursorMode) blinkCursorFrameCounter++;
+    //else blinkCursorFrameCounter = 0;
+
+    // Update control
+    //--------------------------------------------------------------------
+    // WARNING: Text editing is only supported under certain conditions:
+    if ((Properties.Enabled) && // Control enabled
+        !ReadOnly &&            // TextBox not on read-only mode
+//        !guiLocked &&                               // Gui not locked
+//        !guiControlExclusiveMode &&                       // No gui slider on dragging
+        (wrapMode == TEXT_WRAP_NONE))               // No wrap mode
+    {
+        Vector2 mousePosition = GetMousePosition();
+
+        if (Modify.Enabled)
+        {
+//            state = STATE_PRESSED;
+
+            // If text does not fit in the textbox and current cursor position is out of bounds,
+            // we add an index offset to text for drawing only what requires depending on cursor
+/*
+            while (textWidth >= textBounds.width)
+            {
+                int nextCodepointSize = 0;
+                GetCodepointNext(mainBuff + textIndexOffset, &nextCodepointSize);
+
+                textIndexOffset += nextCodepointSize;
+
+                textWidth = GetTextWidth(mainBuff + textIndexOffset) - GetTextWidth(mainBuff + CursorIndex);
+            }
+*/
+            // Get current text length
+            int textLength = (int)strlen(mainBuff);
+            int shadowLength = shadowBuff ? (int)strlen(shadowBuff) : 0; // Does not care in normal mode
+
+            int codepoint = GetCharPressed();       // Get Unicode codepoint
+            if (multiline && IsKeyPressed(KEY_ENTER)) codepoint = (int)'\n';
+
+            if (CursorIndex > textLength)
+            {
+                CursorIndex = textLength;
+                ShadowCursorIndex = shadowBuff ? shadowLength : 0;
+            }
+
+            // Encode codepobbint as UTF-8
+            int codepointSize = 0;
+            const char *charEncoded = CodepointToUTF8(codepoint, &codepointSize);
+
+            // Add codepoint to text, at current cursor position
+            // NOTE: Make sure we do not overflow buffer size
+            if (((multiline && (codepoint == (int)'\n')) || (codepoint >= 32)) && ((textLength + codepointSize) < textSize))
+            {
+                if (!shadowBuff) // Normal mode
+                { 
+                    // Move forward data from cursor position
+                    for (int i = (textLength + codepointSize); i > CursorIndex; i--) mainBuff[i] = mainBuff[i - codepointSize];
+
+                    // Add new codepoint in current cursor position
+                    for (int i = 0; i < codepointSize; i++) mainBuff[CursorIndex + i] = charEncoded[i];
+
+                    CursorIndex += codepointSize;
+                    textLength += codepointSize;
+                    
+                    // Make sure text last character is EOL
+                    mainBuff[textLength] = '\0';
+                }
+                else // Password mode
+                {
+                    // ** shadowBuff **
+                    // Move forward data from cursor position
+                    for (int i = (shadowLength + codepointSize); i > ShadowCursorIndex; i--) shadowBuff[i] = shadowBuff[i - codepointSize];
+
+                    // Add new codepoint in current cursor position
+                    for (int i = 0; i < codepointSize; i++) shadowBuff[ShadowCursorIndex + i] = charEncoded[i];
+
+                    ShadowCursorIndex += codepointSize;
+                    shadowLength += codepointSize;
+                    
+                    // Make sure text last character is EOL
+                    shadowBuff[shadowLength] = '\0';
+
+                    // ** mainBuff **
+                    // Only '*' for view, not need to move data (are all '*')
+                    mainBuff[CursorIndex] = '*';
+                    CursorIndex++;
+                    textLength++;
+                    // Make sure text last character is EOL
+                    mainBuff[textLength] = '\0';
+                }
+            }
+
+            // Move cursor to start
+            if ((textLength > 0) && IsKeyPressed(KEY_HOME))
+            {
+                CursorIndex = 0;
+                ShadowCursorIndex = 0;
+            }
+
+            // Move cursor to end
+            if ((textLength > CursorIndex) && IsKeyPressed(KEY_END))
+            {
+                CursorIndex = textLength;
+                ShadowCursorIndex = shadowBuff ? shadowLength : 0;
+            }
+
+            // Delete codepoint from text, after current cursor position
+            if ((textLength > CursorIndex) && (IsKeyPressed(KEY_DELETE) || (IsKeyDown(KEY_DELETE) && (AutoCursorCooldownCounter >= RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN))))
+            {
+                AutoCursorDelayCounter++;
+
+                if (IsKeyPressed(KEY_DELETE) || (AutoCursorDelayCounter%RAYGUI_TEXTBOX_AUTO_CURSOR_DELAY) == 0)      // Delay every movement some frames
+                {
+                    if (!shadowBuff) // Normal mode
+                    {
+                        int nextCodepointSize = 0;
+                        GetCodepointNext(mainBuff + CursorIndex, &nextCodepointSize);
+
+                        // Move backward text from cursor position
+                        for (int i = CursorIndex; i < textLength; i++) mainBuff[i] = mainBuff[i + nextCodepointSize];
+
+                        textLength -= codepointSize;
+
+                        // Make sure text last character is EOL
+                        mainBuff[textLength] = '\0';
+                    }
+                    else // Password mode
+                    {
+                        // ** shadowBuff **
+                        int nextCodepointSize = 0;
+                        GetCodepointNext(shadowBuff + ShadowCursorIndex, &nextCodepointSize);
+
+                        // Move backward text from cursor position
+                        for (int i = ShadowCursorIndex; i < shadowLength; i++) shadowBuff[i] = shadowBuff[i + nextCodepointSize];
+
+                        shadowLength -= codepointSize;
+
+                        // Make sure text last character is EOL
+                        shadowBuff[shadowLength] = '\0';
+
+                        // ** mainBuff **
+                        // only cut 1 byte
+                        CursorIndex--;
+                        textLength--;
+                        // Make sure text last character is EOL
+                        mainBuff[textLength] = '\0';
+                    }
+                }
+            }
+
+            // Delete codepoint from text, before current cursor position
+            if ((textLength > 0) && (IsKeyPressed(KEY_BACKSPACE) || (IsKeyDown(KEY_BACKSPACE) && (AutoCursorCooldownCounter >= RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN))))
+            {
+                AutoCursorDelayCounter++;
+
+                if (IsKeyPressed(KEY_BACKSPACE) || (AutoCursorDelayCounter%RAYGUI_TEXTBOX_AUTO_CURSOR_DELAY) == 0)      // Delay every movement some frames
+                {
+                    if (!shadowBuff) // Normal mode
+                    {
+                        int prevCodepointSize = 0;
+                        GetCodepointPrevious(mainBuff + CursorIndex, &prevCodepointSize);
+
+                        // Move backward text from cursor position
+                        for (int i = (CursorIndex - prevCodepointSize); i < textLength; i++) mainBuff[i] = mainBuff[i + prevCodepointSize];
+
+                        // Prevent cursor index from decrementing past 0
+                        if (CursorIndex > 0)
+                        {
+                            CursorIndex -= codepointSize;
+                            textLength -= codepointSize;
+                        }
+
+                        // Make sure text last character is EOL
+                        mainBuff[textLength] = '\0';
+                    }
+                    else // Password Mode
+                    {
+                        // ** shadowBuff **
+                        int prevCodepointSize = 0;
+                        GetCodepointPrevious(shadowBuff + ShadowCursorIndex, &prevCodepointSize);
+
+                        // Move backward text from cursor position
+                        for (int i = (ShadowCursorIndex - prevCodepointSize); i < shadowLength; i++) shadowBuff[i] = shadowBuff[i + prevCodepointSize];
+
+                        // Prevent cursor index from decrementing past 0
+                        if (ShadowCursorIndex > 0)
+                        {
+                            ShadowCursorIndex -= codepointSize;
+                            shadowLength -= codepointSize;
+                        }
+
+                        // Make sure text last character is EOL
+                        shadowBuff[textLength] = '\0';
+
+                        // ** mainBuff **
+                        // only cut 1 byte
+                        CursorIndex--;
+                        textLength--;
+                        // Make sure text last character is EOL
+                        mainBuff[textLength] = '\0';
+                    }
+                }
+            }
+
+            // Move cursor position with keys
+            if (IsKeyPressed(KEY_LEFT) || (IsKeyDown(KEY_LEFT) && (AutoCursorCooldownCounter > RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN)))
+            {
+                AutoCursorDelayCounter++;
+
+                if (IsKeyPressed(KEY_LEFT) || (AutoCursorDelayCounter%RAYGUI_TEXTBOX_AUTO_CURSOR_DELAY) == 0)      // Delay every movement some frames
+                {
+                    if (!shadowBuff) // Normal mode
+                    {
+                        int prevCodepointSize = 0;
+                        GetCodepointPrevious(mainBuff + CursorIndex, &prevCodepointSize);
+
+                        if (CursorIndex >= prevCodepointSize) CursorIndex -= prevCodepointSize;
+                    }
+                    else // Password mode
+                    {
+                        // ** shadowBuff **
+                        int prevCodepointSize = 0;
+                        GetCodepointPrevious(shadowBuff + ShadowCursorIndex, &prevCodepointSize);
+
+                        if (ShadowCursorIndex >= prevCodepointSize) ShadowCursorIndex -= prevCodepointSize;
+
+                        // ** mainBuff **
+                        if (CursorIndex >= 0) CursorIndex --;
+                    }
+                }
+            }
+            else if (IsKeyPressed(KEY_RIGHT) || (IsKeyDown(KEY_RIGHT) && (AutoCursorCooldownCounter > RAYGUI_TEXTBOX_AUTO_CURSOR_COOLDOWN)))
+            {
+                AutoCursorDelayCounter++;
+
+                if (IsKeyPressed(KEY_RIGHT) || (AutoCursorDelayCounter%RAYGUI_TEXTBOX_AUTO_CURSOR_DELAY) == 0)      // Delay every movement some frames
+                {
+                    if (!shadowBuff) // Normal mode
+                    {
+                        int nextCodepointSize = 0;
+                        GetCodepointNext(mainBuff + CursorIndex, &nextCodepointSize);
+
+                        if ((CursorIndex + nextCodepointSize) <= textLength) CursorIndex += nextCodepointSize;
+                    }
+                    else // Password mode
+                    {
+                        // ** ShadowBuff **
+                        int nextCodepointSize = 0;
+                        GetCodepointNext(shadowBuff + ShadowCursorIndex, &nextCodepointSize);
+
+                        if ((ShadowCursorIndex + nextCodepointSize) <= shadowLength) ShadowCursorIndex += nextCodepointSize;
+
+                        // ** mainBuff **
+                        if ((CursorIndex + 1) <= textLength) CursorIndex ++;
+                    }
+                }
+            }
+
+            if (CheckCollisionPointRec(mousePosition, bounds)) {
+                // Mouse hover widget
+                float scaleFactor = (float)Text.FontSize/(float)Text.TextFont.baseSize;
+                int codepointIndex = 0;
+                float glyphWidth = 0.0f;
+                float widthToMouseX = 0;
+                int mouseCursorIndex = 0;
+
+                for (int i = textIndexOffset; i < textLength; i++)
+                {
+                    codepoint = GetCodepointNext(&mainBuff[i], &codepointSize);
+                    codepointIndex = GetGlyphIndex(Text.TextFont, codepoint);
+
+                    if (Text.TextFont.glyphs[codepointIndex].advanceX == 0) glyphWidth = ((float)Text.TextFont.recs[codepointIndex].width*scaleFactor);
+                    else glyphWidth = ((float)Text.TextFont.glyphs[codepointIndex].advanceX*scaleFactor);
+
+                    if (mousePosition.x <= (textBounds.x + (widthToMouseX + glyphWidth/2)))
+                    {
+                        mouseCursor.x = textBounds.x + widthToMouseX;
+                        mouseCursorIndex = i;
+                        break;
+                    }
+
+                    widthToMouseX += (glyphWidth + (float)GuiGetStyle(DEFAULT, TEXT_SPACING));
+                }
+
+                // Check if mouse cursor is at the last position
+                int textEndWidth = GetTextWidth(mainBuff + textIndexOffset);
+                if (GetMousePosition().x >= (textBounds.x + textEndWidth - glyphWidth/2))
+                {
+                    mouseCursor.x = textBounds.x + textEndWidth;
+                    mouseCursorIndex = (int)strlen(mainBuff);
+                }
+
+                // Place cursor at required index on mouse click
+                if ((mouseCursor.x >= 0) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+                {
+                    cursor.x = mouseCursor.x;
+                    CursorIndex = mouseCursorIndex;
+                    if (shadowBuff) // Password mode
+                    {
+                        // Calculate index position in shadowBuff
+                        int nextCodepointSize = 0;
+                        int shadowIndex=0;
+                        for (int i = 0; i < mouseCursorIndex; i++){
+                            GetCodepointNext(mainBuff + CursorIndex, &nextCodepointSize);
+                            shadowIndex+=nextCodepointSize;
+                        }
+                        ShadowCursorIndex = shadowIndex;
+                    }
+                }
+            }
+//            else mouseCursor.x = -1;
+
+            // Recalculate cursor position.y depending on textBoxCursorIndex
+            cursor.x = bounds.x + GuiGetStyle(TEXTBOX, TEXT_PADDING) + GetTextWidth(mainBuff + textIndexOffset) - GetTextWidth(mainBuff + CursorIndex) + GuiGetStyle(DEFAULT, TEXT_SPACING);
+            //if (multiline) cursor.y = GetTextLines()
+
+            // Finish text editing on ENTER or mouse click outside bounds
+            if (IsKeyPressed(KEY_ENTER) && !multiline)
+            {
+                CursorIndex = 0;     // GLOBAL: Reset the shared cursor index
+                ShadowCursorIndex = 0;
+                result = KEY_ENTER_PRESSED;
+            }
+            if (IsKeyPressed(KEY_TAB) && !multiline)
+            {
+                CursorIndex = 0;     // GLOBAL: Reset the shared cursor index
+                ShadowCursorIndex = 0;
+                result = KEY_TAB_PRESSED;
+            }
+            else if (!CheckCollisionPointRec(mousePosition, bounds) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+            {
+                CursorIndex = 0;     // GLOBAL: Reset the shared cursor index
+                ShadowCursorIndex = 0;
+                result = TEXT_EDIT_END;
+            }
+        }
+        else
+        {
+            if (CheckCollisionPointRec(mousePosition, bounds))
+            {
+//                state = STATE_FOCUSED;
+
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+                {
+                    CursorIndex = (int)strlen(mainBuff);   // GLOBAL: Place cursor index to the end of current text
+                    ShadowCursorIndex = shadowBuff ? (int)strlen(shadowBuff) : 0;
+                    result = MOUSE_LEFT_BUTTON_PRESSED;
+                    Modify.Enabled=true;
+                }
+                else {
+                    Modify.Enabled=false;
+                }
+            }
+        }
+    }
+    //--------------------------------------------------------------------
+
+    // Draw control
+    //--------------------------------------------------------------------
+    if (Modify.Enabled)
+    {
+        RayGuiDrawRectangle(bounds, Properties.BorderWidth, GetColor(Properties.BorderColor), GetColor(GuiGetStyle(TEXTBOX, BASE_COLOR_PRESSED)));
+    }
+    else if (!Properties.Enabled)
+    {
+        RayGuiDrawRectangle(bounds, Properties.BorderWidth, GetColor(Properties.BorderColor), GetColor(GuiGetStyle(TEXTBOX, BASE_COLOR_DISABLED)));
+    }
+    else RayGuiDrawRectangle(bounds, Properties.BorderWidth, GetColor(Properties.BorderColor), BLANK);
+
+    // Draw text considering index offset if required
+    // NOTE: Text index offset depends on cursor position
+    RayGuiDrawText(mainBuff + textIndexOffset, textBounds, Text.Align, GetColor(Text.TextColor));
+
+    // Draw cursor
+    if (Modify.Enabled && !ReadOnly)
+    {
+        //if (autoCursorMode || ((blinkCursorFrameCounter/40)%2 == 0))
+        RayGuiDrawRectangle(cursor, 0, BLANK, GetColor(GuiGetStyle(TEXTBOX, BORDER_COLOR_PRESSED)));
+
+        // Draw mouse position cursor (if required)
+        if (mouseCursor.x >= 0) RayGuiDrawRectangle(mouseCursor, 0, BLANK, GetColor(GuiGetStyle(TEXTBOX, BORDER_COLOR_PRESSED)));
+    }
+    else if (Focus.Enabled) {
+//        GuiTooltip(bounds);
+    }
+    //--------------------------------------------------------------------
+
+    return result;
 }
 /*
 // Text Box control with mask text (current raygui.h my implementation)

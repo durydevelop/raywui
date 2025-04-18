@@ -10,7 +10,8 @@ DGuiLabel::DGuiLabel(int LeftPos, int TopPos, int ControlWidth, int ControlHeigh
     InitDefault();
 }
 
-DGuiLabel::DGuiLabel(Rectangle WidgetBounds, DGuiWidget *ParentWidget) : DGuiWidget(DLABEL,WidgetBounds,ParentWidget) {
+DGuiLabel::DGuiLabel(Rectangle WidgetBounds, DGuiWidget *ParentWidget) : DGuiWidget(DLABEL,WidgetBounds,ParentWidget)
+{
     InitDefault();
 }
 
@@ -34,65 +35,139 @@ void DGuiLabel::InitDefault(void)
     DEFAULT_SIDE_SIZE=50;
     DEFAULT_WIDTH=50;
     DEFAULT_HEIGHT=20;
+    Text.SetWidgetType(DLABEL);
 }
 
 void DGuiLabel::FinalizeFromTree(DTools::DTree& WidgetTree)
 {
-    // ** Read class specific properties **
-    SetPrefix(WidgetTree.ReadString(DJsonTree::ITEM_PREFIX,""),false);
-    SetSuffix(WidgetTree.ReadString(DJsonTree::ITEM_SUFFIX,""),false);
-    UpdateSize();
+    // Init Text
+    Text.InitFromTree(WidgetTree);
+    if (LabelExt.Label) {
+        if (LabelExt.Label->GetFontSize() < 0) {
+            // Label font size from parent
+            LabelExt.Label->SetFontSize(Text.GetFontSize(),false);
+        }
+    }
+    Update();
+}
+
+void DGuiLabel::SetText(std::string NewText, bool ForceAutoSize) {
+    if (NewText == Text.Text) {
+        return;
+    }
+    Text.Text=NewText;
+
+    if (ForceAutoSize) {
+        Update();
+    }
+}
+
+const std::string& DGuiLabel::GetText(void) {
+    return std::ref(Text.Text);
+}
+
+int DGuiLabel::GetFontSize(void) {
+    return Text.FontSize;
 }
 
 void DGuiLabel::SetPrefix(std::string PrefixText, bool ForceUpdate) {
-    if (TextPrefix == PrefixText) {
+    if (Text.Prefix == PrefixText) {
         return;
     }
-    TextPrefix=PrefixText;
+    Text.Prefix=PrefixText;
 
     if (ForceUpdate) {
-        UpdateSize();
+        Update();
     }
 }
 
 void DGuiLabel::SetSuffix(std::string SuffixText, bool ForceUpdate) {
-    if (TextSuffix == SuffixText) {
+    if (Text.Suffix == SuffixText) {
         return;
     }
-    TextSuffix=SuffixText;
+    Text.Suffix=SuffixText;
 
     if (ForceUpdate) {
-        UpdateSize();
+        Update();
     }
 }
 
-void DGuiLabel::UpdateSize(void)
+/**
+ * @brief Set the size of Text (if widget need text).
+ * 
+ * @param NewSize   ->  the new text size.
+ */
+void DGuiLabel::SetFontSize(int NewSize, bool ForceAutoSize)
 {
-    // Expand due to the padding and border
-    if (Text.empty()) {
-        return;
+    if (NewSize == 0) {
+        NewSize=GuiGetStyle(DEFAULT,TEXT_SIZE);
     }
-    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
-    SetWidth(GetTextBounds().width+(TextOffset*2));
-    SetHeight(Properties.TextSize+(TextOffset*2));
+
+    Text.FontSize=NewSize;
+
+    if (ForceAutoSize) {
+        Update();
+    }
 }
 
-Rectangle DGuiLabel::GetTextBounds(void)
+void DGuiLabel::SetTextPadding(int NewPadding, bool ForceAutoSize)
 {
-    // Measure text
-    /// @todo UpdateTextWith() when text changes
-    int TextWidth=GetTextWidth(TextPrefix+Text+TextSuffix,Properties.TextFont,Properties.TextSize);
-    
-    // Calculate text bounds
-    int TextOffset=Properties.BorderWidth+Properties.TextPadding;
-    Rectangle AbsBounds=GetAbsBounds();
-    Rectangle TextBounds;
-    TextBounds.x=AbsBounds.x+TextOffset;
-    TextBounds.y=AbsBounds.y+TextOffset;
-    TextBounds.width=TextWidth;
-    TextBounds.height=Properties.TextSize;
+    Text.SetPadding(NewPadding);
 
-    return TextBounds;
+    if (ForceAutoSize) {
+        Update();
+    }
+}
+
+void DGuiLabel::SetTextSpacing(int NewSpacing, bool ForceAutoSize)
+{
+    Text.SetSpacing(NewSpacing);
+
+    if (ForceAutoSize) {
+        Update();
+    }
+}
+
+/**
+ * @brief Set text align value from align string.
+ * 
+ * @param AlignHoriz 
+ * @param AlignVert 
+ */
+void DGuiLabel::SetTextAlign(std::string AlignHoriz,std::string AlignVert) {
+    Text.SetAlign(AlignHoriz,AlignVert);
+}
+
+void DGuiLabel::Update(void)
+{
+    if (!Text.IsEmpty()) {
+        if (Properties.HSizeMode == DSizeMode::SIZE_AUTO) {
+            AutoWidth();
+        }
+
+        if (Properties.VSizeMode == DSizeMode::SIZE_AUTO) {
+            AutoHeight();
+        }
+    }
+
+    DGuiWidget::Update();
+}
+
+void DGuiLabel::AutoWidth(void)
+{
+    int TextOffset=Properties.BorderWidth+Text.Padding;
+    Bounds.width=GetTextBounds(Text).width+(TextOffset*2);
+}
+
+void DGuiLabel::AutoHeight(void)
+{
+    int TextOffset=Properties.BorderWidth+Text.Padding;
+    Bounds.height=Text.FontSize+(TextOffset*2);
+}
+
+DTextAlign DGuiLabel::GetTextAlign(void)
+{
+    return Text.Align;
 }
 
 void DGuiLabel::Clear(void) {
@@ -105,10 +180,18 @@ void DGuiLabel::Clear(void) {
  */
 void DGuiLabel::Draw()
 {
+    // Store current global raygui styles
+    BackupCurrentTextStyle(TempText);
+    // Set global raygui style from this->Properties
+    UpdateCurrentTextStyle(Text);
+
     Rectangle AbsBounds=GetAbsBounds();
     // Draw background
     DrawRectangle(AbsBounds.x,AbsBounds.y,AbsBounds.width,AbsBounds.height,GetColor(Properties.BackGroundColor));
     // Draw label
     //GuiLabel(Bounds,(TextPrefix+Text+TextSuffix).c_str());
-    RayGuiDrawText(TextPrefix+Text+TextSuffix,GetTextBounds(),Properties.TextAlign,GetColor(Properties.TextColor));
+    RayGuiDrawText(Text.Prefix+Text.Text+Text.Suffix,GetTextBounds(Text),Text.Align,GetColor(Text.TextColor));
+
+    // Restore previous saved global raygui styles
+    RestoreCurrentTextStyle(TempText);
 }

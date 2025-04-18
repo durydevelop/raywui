@@ -12,13 +12,15 @@ class DGuiLed : public DGuiContainer
 
         void On(void);
         void Off(void);
-        void SwitchTo(bool SwitchOn);
+        void SwitchTo(bool On);
+        void SwitchToColor(uint NewColor);
+        void SwitchToColor(Color NewColor);
         void Toggle(void);
         void SetCenter(int LeftPos, int TopPos);
 
         //void SetPos(int LeftPos, int TopPos) override;
         //void SetSize(int Width, int Height) override;
-        void SetCaption(std::string CaptionText, int FontSize, DSide Side, int Offset) override;
+        void SetLabelInt(std::string LabelIntText, int FontSize, DSide Side, int Offset) override;
         //bool UpdateAnchor(void) override;
 
         void Draw() override;

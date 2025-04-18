@@ -59,14 +59,17 @@ bool DGuiApp::LoadCanvas(std::string CanvasFilename)
         std::string Type=WidgetTree.ReadString(DJsonTree::ITEM_TYPE,"");
         if (DString::CmpNoCase(Type,DJsonTree::VALUE_JSON)) {
             // Widget from file
+            std::string WidgetName=WidgetTree.ReadString(DJsonTree::ITEM_NAME,"");
             if (!AddStaticFromFile(WidgetTree.ReadString(DJsonTree::ITEM_NAME,""))) {
                 Done=false;
+                return false;
             }
         }
         else {
             // Widget from tree
             if (!AddStaticFromTree(std::ref(WidgetTree))) {
                 Done=false;
+                return false;
             }
         }
     }
@@ -77,14 +80,17 @@ bool DGuiApp::LoadCanvas(std::string CanvasFilename)
         std::string Type=WidgetTree.ReadString(DJsonTree::ITEM_TYPE,"");
         if (DString::CmpNoCase(Type,DJsonTree::VALUE_JSON)) {
             // Widget from file
+            //std::string WidgetName=WidgetTree.ReadString(DJsonTree::ITEM_NAME,"");
             if (!AddDynamicFromFile(WidgetTree.ReadString(DJsonTree::ITEM_NAME,""))) {
                 Done=false;
+                return false;
             }
         }
         else {
             // Widget from tree
             if (!AddDynamicFromTree(std::ref(WidgetTree))) {
                 Done=false;
+                return false;
             }
         }
     }
@@ -142,6 +148,27 @@ void DGuiApp::SetOnAppStopped(std::function<void (void)> Callback) {
 
 void DGuiApp::SetOnTick(std::function<void (void)> Callback) {
     TickCallback=Callback;
+}
+
+size_t DGuiApp::AddTimerEvent(std::string Name, unsigned long IntervalMs, std::function<void (void)> Callback)
+{
+    DTimerEvent Timer(Name,IntervalMs,Callback);
+    Timers.emplace_back(std::move(Timer));
+    Log::debug(TAG,"now timers %d",Timers.size());
+    return Timers.size()-1;
+}
+
+bool DGuiApp::DeleteTimerEvent(std::string Name)
+{
+    for (size_t ixT=0; ixT<Timers.size(); ixT++) {
+        if (Timers[ixT].Name == Name) {
+            Timers.erase(Timers.begin()+ixT);
+            Log::debug(TAG,"now timers %d",Timers.size());
+            return true;
+        }
+    }
+    Log::error("Cannot delete Timer <%s> : not found",Name.c_str());
+    return false;
 }
 
 void DGuiApp::ClearScreen(void)
@@ -245,6 +272,25 @@ DGuiWidget* DGuiApp::FindWidgetByName(std::string WidgetName) {
     return nullptr;
 }
 
+int DGuiApp::GetAllWidgets(std::vector<DGuiWidget*>& WidgetList) {
+    for (auto& [Id,Widget] : Canvas.Dynamics) {
+        if (Widget->GetWidgetType() == DWidgetType::DCONTAINER) {
+            DGuiContainer *c=(DGuiContainer *) Widget;
+            c->GetAllWidgets(WidgetList);
+        }
+        WidgetList.emplace_back(Widget);
+    }
+    for (auto& [Id,Widget] : Canvas.Statics) {
+        if (Widget->GetWidgetType() == DWidgetType::DCONTAINER) {
+            DGuiContainer *c=(DGuiContainer *) Widget;
+            c->GetAllWidgets(WidgetList);
+        }
+        WidgetList.emplace_back(Widget);
+    }
+
+    return WidgetList.size();
+}
+
 DResult DGuiApp::Run(void)
 {
     DResult Result;
@@ -271,6 +317,17 @@ DResult DGuiApp::Run(void)
         //auto tick=std::chrono::system_clock::now();
         if (TickCallback) {
             TickCallback();
+        }
+
+        if (!Timers.empty()) {
+            // Execute timer events
+            for (auto Timer : Timers) {
+                auto CurrTime=DChrono::NowMillis();
+                if (CurrTime-Timer.LastTime >= Timer.IntervalMs) {
+                    Timer.LastTime=CurrTime;
+                    Timer.Callback();
+                }
+            }
         }
 
         if (CurrDynamic.Widget) {

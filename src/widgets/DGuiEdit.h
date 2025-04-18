@@ -3,6 +3,7 @@
 
 #include <DGuiWidget.h>
 #include <raygui.h>
+#include <DText.h>
 
 class DGuiEdit : public DGuiWidget
 {
@@ -21,33 +22,36 @@ class DGuiEdit : public DGuiWidget
         bool GetReadOnly(void);
         void SetPasswordMode(bool Enabled);
         bool GetPasswordMode(void);
-        void SetFocus(void);
+        void SetFocus(bool Enabled);
         void UpdateSize(void);
         Rectangle GetTextBounds(void);
 
         void Draw() override;
         
-        const std::string& GetText(void) override;
-        void SetText(std::string NewText, bool ForceAutoSize) override;
+        const std::string& GetText(void);
+        void SetText(std::string NewText, bool ForceAutoSize);
         char* GetTextPtr(void);
-
         bool IsEmpty(void);
+        int GetTextWidth(std::string TextStr);
 
     private:
         void InitDefault(void);
         void FinalizeFromTree(DTools::DTree& WidgetTree);
-        //int DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode);
+        int DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize);
 
+        DText Text;
+        DText TempText;
         size_t MaxTextLenght;   /// Max lenght of edit text
         bool ReadOnly;          /// Read-only mode
         bool PasswordMode;      /// When true viewBuff is masked with '*'.
         char *ViewBuff;         /// Buffer used for ui, if PasswordMode is false it is used also for realtext.
         char *HideBuff;         /// In password mode used to store text.
-        int TextBoxShadowCursorIndex;  /// In password mode used to keep trace of current cursor position.
-        bool EditMode;
-        //DWidgetEvent ResultEvent;
-
-        //bool DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize, bool editMode, DWidgetEvent& EventData);
+        int ShadowCursorIndex;  /// In password mode used to keep trace of current cursor position.
+        int CursorIndex;
+        int AutoCursorCooldownCounter;
+        int AutoCursorDelayCounter;
+        bool Pressed;
+        //bool EditMode;
 };
 
 #endif
