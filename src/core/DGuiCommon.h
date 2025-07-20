@@ -5,6 +5,7 @@
 #include "raygui.h"
 #include <string>
 #include <map>
+#include <cstdint>
 
 struct DJsonTree {
             inline static const std::string SEC_CHILDREN="Children";
