@@ -57,7 +57,7 @@ void DGuiImage::InitDefault(void)
     /// @todo Label rotation?
     RotationValue=0;
     ScaleValue=1.0;
-    Properties.BackGroundColor=ColorToInt(WHITE);
+    Properties.BackgroundColor=ColorToInt(WHITE);
     //DEFAULT_SIDE_SIZE=50;
     //DEFAULT_WIDTH=50;
     //DEFAULT_HEIGHT=20;
@@ -83,5 +83,5 @@ void DGuiImage::FinalizeFromTree(DTools::DTree& WidgetTree)
 void DGuiImage::Draw()
 {
     Rectangle AbsBounds=GetAbsBounds();
-    DrawTextureEx(imageTexture,Vector2(AbsBounds.x,AbsBounds.y),RotationValue,ScaleValue,GetColor(Properties.BackGroundColor));
+    DrawTextureEx(imageTexture,Vector2(AbsBounds.x,AbsBounds.y),RotationValue,ScaleValue,GetColor(Properties.BackgroundColor));
 }

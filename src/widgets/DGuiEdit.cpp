@@ -101,7 +101,7 @@ void DGuiEdit::SetMaxTextLenght(size_t NewLenght)
     if (PasswordMode) {
         // In password mode real text buffer is HideBuff
         // Store
-        Text.Text.assign(HideBuff);
+        Text.SetText(HideBuff);
         // reallocate buffer
         if (HideBuff) {
             delete HideBuff;
@@ -109,7 +109,7 @@ void DGuiEdit::SetMaxTextLenght(size_t NewLenght)
         HideBuff=new char[MaxTextLenght+1];
         memset(HideBuff,'\0',MaxTextLenght+1);
         // re-assign
-        strcpy(HideBuff,Text.Text.c_str());
+        strcpy(HideBuff,Text.GetText().c_str());
 
         // ViewBuff is used for masked view
         delete ViewBuff;
@@ -119,13 +119,13 @@ void DGuiEdit::SetMaxTextLenght(size_t NewLenght)
     else {
         // NO password mode (only ViewBuff is used)
         // Store
-        Text.Text.assign(ViewBuff);
+        Text.SetText(ViewBuff);
         // reallocate buffer
         delete ViewBuff;
         ViewBuff=new char[MaxTextLenght+1];
         memset(ViewBuff,'\0',MaxTextLenght+1);
         // re-assign
-        strcpy(ViewBuff,Text.Text.c_str());
+        strcpy(ViewBuff,Text.GetText().c_str());
     }
 }
 
@@ -208,21 +208,21 @@ void DGuiEdit::ClearText(void)
         memset(HideBuff,'\0',MaxTextLenght+1);
         ShadowCursorIndex=0;
     }
-    Text.Text.clear();
+    Text.SetText("");
 }
 
 const std::string& DGuiEdit::GetText(void)
 {
     if (HideBuff) {
         // Password mode
-        Text.Text.assign(HideBuff);    
+        Text.SetText(HideBuff);
     }
     else {
         // Normal mode
-        Text.Text.assign(ViewBuff);
+        Text.SetText(ViewBuff);
     }
-    
-    return Text.Text;
+
+    return Text.GetText();
 }
 
 /**
@@ -250,7 +250,7 @@ void DGuiEdit::SetText(std::string NewText, bool ForceAutoSize)
             return;
         }
         strcpy(HideBuff,NewText.c_str());
-        Text.Text.assign(HideBuff);
+        Text.SetText(HideBuff);
     }
     else {
         // NormalMode
@@ -259,7 +259,7 @@ void DGuiEdit::SetText(std::string NewText, bool ForceAutoSize)
             return;
         }
         strcpy(ViewBuff,NewText.c_str());
-        Text.Text.assign(ViewBuff);
+        Text.SetText(ViewBuff);
     }
 
     if (ForceAutoSize) {
@@ -270,28 +270,28 @@ void DGuiEdit::SetText(std::string NewText, bool ForceAutoSize)
 void DGuiEdit::UpdateSize(void)
 {
     // Expand due to the padding and border
-    if (Text.Text.empty()) {
+    if (Text.GetText().empty()) {
         return;
     }
-    int TextOffset=Properties.BorderWidth+Text.Padding;
+    int TextOffset=Properties.BorderWidth+Text.GetPadding();
     SetWidth(GetTextBounds().width+(TextOffset*2));
-    SetHeight(Text.FontSize+(TextOffset*2));
+    SetHeight(Text.GetFontSize()+(TextOffset*2));
 }
 
 Rectangle DGuiEdit::GetTextBounds(void)
 {
     // Measure text
     /// @todo UpdateTextWith() when text changes
-    int TextWidth=GetTextWidth(Text.Text);
+    int TextWidth=GetTextWidth(Text.GetText());
     
     // Calculate text bounds
-    int TextOffset=Properties.BorderWidth+Text.Padding;
+    int TextOffset=Properties.BorderWidth+Text.GetPadding();
     Rectangle AbsBounds=GetAbsBounds();
     Rectangle TextBounds;
     TextBounds.x=AbsBounds.x+TextOffset;
     TextBounds.y=AbsBounds.y+TextOffset;
     TextBounds.width=TextWidth;
-    TextBounds.height=Text.FontSize;
+    TextBounds.height=Text.GetFontSize();
 
     return TextBounds;
 }
@@ -308,7 +308,7 @@ bool DGuiEdit::IsEmpty(void) {
 }
 int DGuiEdit::GetTextWidth(std::string TextStr)
 {
-    return DGuiWidget::GetTextWidth(TextStr,Text.TextFont,Text.FontSize,Text.Spacing);
+    return DGuiWidget::GetTextWidth(TextStr,Text.GetFont(),Text.GetFontSize(),Text.GetSpacing());
 }
 
 /**
@@ -655,7 +655,7 @@ int DGuiEdit::DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, in
 
             if (CheckCollisionPointRec(mousePosition, bounds)) {
                 // Mouse hover widget
-                float scaleFactor = (float)Text.FontSize/(float)Text.TextFont.baseSize;
+                float scaleFactor = (float)Text.GetFontSize()/(float)Text.GetFont().baseSize;
                 int codepointIndex = 0;
                 float glyphWidth = 0.0f;
                 float widthToMouseX = 0;
@@ -664,10 +664,10 @@ int DGuiEdit::DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, in
                 for (int i = textIndexOffset; i < textLength; i++)
                 {
                     codepoint = GetCodepointNext(&mainBuff[i], &codepointSize);
-                    codepointIndex = GetGlyphIndex(Text.TextFont, codepoint);
+                    codepointIndex = GetGlyphIndex(Text.GetFont(), codepoint);
 
-                    if (Text.TextFont.glyphs[codepointIndex].advanceX == 0) glyphWidth = ((float)Text.TextFont.recs[codepointIndex].width*scaleFactor);
-                    else glyphWidth = ((float)Text.TextFont.glyphs[codepointIndex].advanceX*scaleFactor);
+                    if (Text.GetFont().glyphs[codepointIndex].advanceX == 0) glyphWidth = ((float)Text.GetFont().recs[codepointIndex].width*scaleFactor);
+                    else glyphWidth = ((float)Text.GetFont().glyphs[codepointIndex].advanceX*scaleFactor);
 
                     if (mousePosition.x <= (textBounds.x + (widthToMouseX + glyphWidth/2)))
                     {
@@ -766,7 +766,7 @@ int DGuiEdit::DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, in
 
     // Draw text considering index offset if required
     // NOTE: Text index offset depends on cursor position
-    RayGuiDrawText(mainBuff + textIndexOffset, textBounds, Text.Align, GetColor(Text.TextColor));
+    RayGuiDrawText(mainBuff + textIndexOffset, textBounds, Text.GetAlign(), GetColor(Text.GetColor()));
 
     // Draw cursor
     if (Modify.Enabled && !ReadOnly)

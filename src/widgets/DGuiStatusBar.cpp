@@ -118,7 +118,7 @@ void DGuiStatusBar::FinalizeFromTree(DTools::DTree& WidgetTree)
 void DGuiStatusBar::AddItem(std::string ItemName, int LeftPos, int ItemWidth, std::string ItemText, std::string StrAlignH) {
     DStatusBarItem Item(this);
     // Copy text style
-    Item.Text=Text;
+    Item.Text.Assign(Text);
     // Set textalign
     Item.Text.SetAlignH(StrAlignH);
 

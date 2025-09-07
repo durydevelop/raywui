@@ -195,6 +195,9 @@ DGuiWidget* DGuiWidget::New(DTools::DTree& WidgetTree, DGuiWidget* ParentWidget,
     return nullptr;
 }
 
+/**
+ * Read widget info from a DTree and set class properties.
+ */
 bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
 {
     std::string StrValue; // for generic string read in tree
@@ -220,25 +223,31 @@ bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
     // Bounds
     Rectangle WidgetBounds;
     WidgetBounds.x=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_LEFT,0);
-  /*
-    if (WidgetBounds.x < 0) {
-        StrValue=WidgetTree.ReadString(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_LEFT,"");
-        if (DString::CmpNoCase(StrValue,DJsonTree::VALUE_CENTER)) {
-            WidgetBounds.x=DDocking::DOCK_HCENTER;
-        }
-    }
-*/
     WidgetBounds.y=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_TOP,0);
-/*
-    if (WidgetBounds.y < 0) {
-        StrValue=WidgetTree.ReadString(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_TOP,"");
-        if (DString::CmpNoCase(StrValue,DJsonTree::VALUE_CENTER)) {
-            WidgetBounds.y=DDocking::DOCK_VCENTER;
-        }
+    //WidgetBounds.width=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_WIDTH,DSizeMode::SIZE_AUTO);
+    //WidgetBounds.height=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_HEIGHT,DSizeMode::SIZE_AUTO);
+    // Width
+    StrValue=WidgetTree.ReadString(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_WIDTH,"");
+    if (DString::CmpNoCase(StrValue,DJsonTree::VALUE_AUTO)) {
+        WidgetBounds.width=DSizeMode::SIZE_AUTO;
     }
-*/
-    WidgetBounds.width=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_WIDTH,DSizeMode::SIZE_AUTO);
-    WidgetBounds.height=WidgetTree.ReadInteger(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_HEIGHT,DSizeMode::SIZE_AUTO);
+    else if (DString::CmpNoCase(StrValue,DJsonTree::VALUE_PARENT)) {
+        WidgetBounds.width=DSizeMode::SIZE_PARENT;
+    }
+    else {
+        WidgetBounds.width=DString::ToNumber<int>(StrValue,DSizeMode::SIZE_AUTO);
+    }
+    // Height
+    StrValue=WidgetTree.ReadString(DJsonTree::ITEM_BOUNDS,DJsonTree::ITEM_HEIGHT,"");
+    if (DString::CmpNoCase(StrValue,DJsonTree::VALUE_AUTO)) {
+        WidgetBounds.height=DSizeMode::SIZE_AUTO;
+    }
+    else if (DString::CmpNoCase(StrValue,DJsonTree::VALUE_PARENT)) {
+        WidgetBounds.height=DSizeMode::SIZE_PARENT;
+    }
+    else {
+        WidgetBounds.height=DString::ToNumber<int>(StrValue,DSizeMode::SIZE_AUTO);
+    }
     SetBounds(WidgetBounds);
 
     // Border visible
@@ -255,7 +264,7 @@ bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
     else {
         Properties.BorderColor=ColorToInt(BLACK);
     }
-
+/*
     // Line color
     int IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_LINE_COLOR,0);
     if (IntValue > 0) {
@@ -265,9 +274,22 @@ bool DGuiWidget::InitFromTree(DTools::DTree& WidgetTree)
     // Background color
     IntValue=WidgetTree.ReadInteger(DJsonTree::ITEM_BACKGROUND_COLOR,0);
     if (IntValue > 0) {
-        Properties.BackGroundColor=IntValue;
+        Properties.BackgroundColor=IntValue;
+    }
+*/
+
+    // Line color
+    StrValue=WidgetTree.ReadString(DJsonTree::ITEM_LINE_COLOR,"");
+    if (!StrValue.empty()) {
+        Properties.LineColor=ColorStringToInt(StrValue);
     }
 
+    // Background color
+    StrValue=WidgetTree.ReadString(DJsonTree::ITEM_BACKGROUND_COLOR,"");
+    if (!StrValue.empty()) {
+        Properties.BackgroundColor=ColorStringToInt(StrValue);
+    }
+    
     // Anchors (if AnchorToSide is empty, ANCHOR_NONE is set)
     std::string AnchorTree=DJsonTree::ITEM_BOUNDS + DTree::DEFAULT_TRANSLATOR + DJsonTree::ITEM_ANCHORS;
     if (!WidgetTree.HasChildren(AnchorTree)) {
@@ -428,6 +450,7 @@ void DGuiWidget::UpdateLabelExt(void)
     }
 }
 
+// ****************************************** Conversion between types and names in json ******************************************
 DWidgetType DGuiWidget::NameToType(const std::string& WidgetTypeName)
 {
     DWidgetType WidgetType=DWidgetType::UNKNOWN;
@@ -516,6 +539,25 @@ DAlign DGuiWidget::NameToAlign(const std::string& AlignName, DAlign Default)
     return Default;
 }
 
+std::string DGuiWidget::SizeToName(DSizeMode Size)
+{
+    std::string SizeName;
+    if (SizeModes.contains(Size)) {
+        SizeName=SizeModes.at(Size);
+    }
+    return SizeName;
+}
+
+DSizeMode DGuiWidget::NameToSize(const std::string& SizeName, DSizeMode Default)
+{
+    for (auto item : SizeModes) {
+        if (item.second == SizeName) {
+            return item.first;
+        }
+    }
+    return Default;
+}
+
 std::string DGuiWidget::AlignToName(DAlign Align)
 {
     std::string AlignName;
@@ -524,6 +566,7 @@ std::string DGuiWidget::AlignToName(DAlign Align)
     }
     return AlignName;
 }
+// **************************************** End conversion between types and names in json ****************************************
 
 void DGuiWidget::GenerateId(void)
 {
@@ -1181,7 +1224,7 @@ void DGuiWidget::SetWidgetType(DWidgetType WidgetType)
     // Colors
     Properties.BorderColor=ColorToInt(BLACK);
     Properties.LineColor=GuiGetStyle(Type,LINE_COLOR);
-    Properties.BackGroundColor=GuiGetStyle(Type,BACKGROUND_COLOR);
+    Properties.BackgroundColor=GuiGetStyle(Type,BACKGROUND_COLOR);
 
     // Others
     Properties.BorderWidth=GuiGetStyle(Type,BORDER_WIDTH);
@@ -1254,7 +1297,7 @@ void DGuiWidget::BackupCurrentGuiStyle(void) {
 
     // Other Colors 
     TempStyle.LineColor=GuiGetStyle(Type,LINE_COLOR);
-    TempStyle.BackGroundColor=GuiGetStyle(Type,BACKGROUND_COLOR);
+    TempStyle.BackgroundColor=GuiGetStyle(Type,BACKGROUND_COLOR);
     TempStyle.Enabled=Properties.Enabled;
 }
 
@@ -1268,7 +1311,7 @@ void DGuiWidget::UpdateCurrentGuiStyle(void) {
 
     // Other colors
     GuiSetStyle(Type,LINE_COLOR,Properties.LineColor);
-    GuiSetStyle(Type,BACKGROUND_COLOR,Properties.BackGroundColor);
+    GuiSetStyle(Type,BACKGROUND_COLOR,Properties.BackgroundColor);
 
     Properties.Enabled ? GuiEnable() : GuiDisable();
 }
@@ -1283,7 +1326,7 @@ void DGuiWidget::RestoreCurrentGuiStyle(void) {
 
     // Other colors
     GuiSetStyle(Type,LINE_COLOR,TempStyle.LineColor);
-    GuiSetStyle(Type,BACKGROUND_COLOR,TempStyle.BackGroundColor);
+    GuiSetStyle(Type,BACKGROUND_COLOR,TempStyle.BackgroundColor);
 
     TempStyle.Enabled ? GuiEnable() : GuiDisable();
 }
@@ -1591,9 +1634,9 @@ void DGuiWidget::RayGuiDrawText(const char *TextStr, Rectangle TextBounds, int A
     GuiDrawText(TextStr,TextBounds,Alignment,Tint);
 }
 
-void DGuiWidget::RayGuiDrawText(std::string TextStr, Rectangle TextBounds, DTextAlign Alignment, Color Tint)
+void DGuiWidget::RayGuiDrawText(std::string TextStr, Rectangle TextBounds, DTextAlign Align, Color Tint)
 {
-    GuiDrawText(TextStr.c_str(),TextBounds,Alignment.Horiz,Tint);
+    GuiDrawText(TextStr.c_str(),TextBounds,Align.Horiz,Tint);
 }
 
 float DGuiWidget::GetGuiAlpha(void)

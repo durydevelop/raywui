@@ -16,3 +16,5 @@ DONE:
 - [x] DGuiWIdget does not have text
 - [x] DText struct in widget that need text
 
+0.2.5
+- [x] [BUG] DGuiLabel se Size è auto il bordo non copre tutta la largezza

@@ -22,6 +22,7 @@ class DGuiLabel : public DGuiWidget
         void SetTextSpacing(int NewSpacing, bool ForceAutoSize);
         void SetTextPadding(int NewPadding, bool ForceAutoSize);
         void SetTextAlign(std::string AlignHoriz, std::string AlignVert);
+        void SetTextAlign(DTextAlign TextAlign);
         void Clear(void);
 
         const std::string& GetText(void);
@@ -34,11 +35,11 @@ class DGuiLabel : public DGuiWidget
         void Draw() override;
 
         DText Text;
-        
+
     private:
         void InitDefault(void);
         void FinalizeFromTree(DTools::DTree& WidgetTree);
-        
+
         DText TempText; // Used for backup and restore current raygui style
 };
 

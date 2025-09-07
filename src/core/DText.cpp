@@ -65,6 +65,19 @@ void DText::InitFromTree(DTree WidgetTree) //, DText *ParentText)
     SetPadding(WidgetTree.ReadInteger(DJsonTree::ITEM_TEXT_PADDING,0));
 }
 
+void DText::SetText(std::string NewText)
+{
+    if (NewText == Text) {
+        return;
+    }
+    Text=NewText;
+}
+
+const std::string& DText::GetText(void) const
+{
+    return Text;
+}
+
 void DText::SetPadding(int NewPadding)
 {
     if (NewPadding <= 0) {
@@ -127,12 +140,76 @@ void DText::SetFontSize(int NewSize)
     FontSize=NewSize;
 }
 
-int DText::GetFontSize(void)
+void DText::SetPrefix(std::string PrefixText)
+{
+    Prefix=PrefixText;
+}
+
+void DText::SetSuffix(std::string SuffixText)
+{
+    Suffix=SuffixText;
+}
+
+void DText::SetColor(unsigned int Color)
+{
+    TextColor=Color;
+}
+
+int DText::GetFontSize(void) const
 {
     return FontSize;
 }
 
-bool DText::IsEmpty(void)
+int DText::GetPadding(void) const
+{
+    return Padding;
+}
+
+int DText::GetSpacing(void) const
+{
+    return Spacing;
+}
+
+DTextAlign DText::GetAlign(void) const
+{
+    return Align;
+}
+
+int DText::GetColor(void) const
+{
+    return TextColor;
+}
+
+Font DText::GetFont(void) const
+{
+    return TextFont;
+}
+
+std::string DText::GetPrefix(void) const
+{
+    return Prefix;
+}
+
+std::string DText::GetSuffix(void) const
+{
+    return Suffix;
+}
+
+bool DText::IsEmpty(void) const
 {
     return Text.empty();
+}
+
+void DText::Assign(const DText& Other)
+{
+    WidgetType=Other.WidgetType;
+    Text=Other.Text;
+    Align=Other.Align;
+    Prefix=Other.Prefix;
+    Suffix=Other.Suffix;
+    TextColor=Other.TextColor;
+    Padding=Other.Padding;
+    FontSize=Other.FontSize;
+    Spacing=Other.Spacing;
+    TextFont=Other.TextFont;
 }

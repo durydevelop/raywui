@@ -25,11 +25,11 @@ class DGuiStatusBar : public DGuiWidget
 
         std::map<std::string,DStatusBarItem> Items;
 
+        DText Text;
+
     private:
         void InitDefault(void);
         void FinalizeFromTree(DTools::DTree& WidgetTree);
-
-        DText Text;
 };
 
 #endif

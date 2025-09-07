@@ -34,12 +34,13 @@ class DGuiEdit : public DGuiWidget
         bool IsEmpty(void);
         int GetTextWidth(std::string TextStr);
 
+        DText Text;
+
     private:
         void InitDefault(void);
         void FinalizeFromTree(DTools::DTree& WidgetTree);
         int DrawTextBox(Rectangle bounds, char *mainBuff, char *shadowBuff, int textSize);
 
-        DText Text;
         DText TempText;
         size_t MaxTextLenght;   /// Max lenght of edit text
         bool ReadOnly;          /// Read-only mode

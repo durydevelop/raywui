@@ -85,6 +85,8 @@ struct DJsonTree {
             inline static const std::string VALUE_HCENTER="CenterOriz";
             inline static const std::string VALUE_VCENTER="CenterVert";
             inline static const std::string VALUE_JSON="Json";
+            inline static const std::string VALUE_AUTO="Auto";
+            inline static const std::string VALUE_PARENT="Parent";
         };
 
 //typedef GuiControl DWidgetType;
@@ -129,14 +131,14 @@ enum DAlign {
     ALIGN_HCENTER= 0b0100000,
     ALIGN_VCENTER= 0b1000000
 }; /// Generic Align
-enum DTextAlignH { TEXT_ALIGN_HLEFT=TEXT_ALIGN_LEFT, TEXT_ALIGN_HCENTER=TEXT_ALIGN_CENTER, TEXT_ALIGN_HRIGHT=TEXT_ALIGN_RIGHT }; /// Text horizontal align
-enum DTextAlignV { TEXT_ALIGN_VTOP=TEXT_ALIGN_TOP, TEXT_ALIGN_VCENTER=TEXT_ALIGN_CENTER, TEXT_ALIGN_VBOTTOM=TEXT_ALIGN_BOTTOM }; /// Text vertical align
+enum DTextAlignH { TEXT_ALIGN_HLEFT = TEXT_ALIGN_LEFT, TEXT_ALIGN_HCENTER = TEXT_ALIGN_CENTER, TEXT_ALIGN_HRIGHT = TEXT_ALIGN_RIGHT }; /// Text horizontal align
+enum DTextAlignV { TEXT_ALIGN_VTOP = TEXT_ALIGN_TOP, TEXT_ALIGN_VCENTER = TEXT_ALIGN_CENTER, TEXT_ALIGN_VBOTTOM = TEXT_ALIGN_BOTTOM }; /// Text vertical align
 typedef struct DTextAlign{
     DTextAlignH Horiz=TEXT_ALIGN_HLEFT;
     DTextAlignV Vert=TEXT_ALIGN_VCENTER;
 } DTextAlign;
 
-enum DEventCode { UNKOWN_EVENT=-1, BUTTON_PRESS, EDIT_END, TOGGLE_CHANGED, KEY_PRESSED };
+enum DEventCode { UNKOWN_EVENT = -1, BUTTON_PRESS, EDIT_END, TOGGLE_CHANGED, KEY_PRESSED };
 
 // Rapresent a widget event
 typedef struct _DWidgetEvent {

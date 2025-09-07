@@ -31,7 +31,11 @@ if (USE_EXTERNAL_DPPLIB)
         endif()
     elseif(dpplib_ROOT)
         # Local FORCED
-        add_subdirectory(${dpplib_ROOT} _deps/dpplib)
+        if(EXISTS "${dpplib_ROOT}")
+            add_subdirectory(${dpplib_ROOT} _deps/dpplib)
+        else()
+            message(FATAL_ERROR "dpplib_ROOT directory '${dpplib_ROOT}' does not exist.")
+        endif()
     else()
         # Try to find in system
         find_package(dpplib QUIET CONFIG)

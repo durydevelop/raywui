@@ -92,6 +92,7 @@ set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "No wayland" FORCE) # Set to OFF if failed
 # If none specified:
 # First:  Try to find it in system
 # Second: Load from default git repo (git@gitlab.com:durydevelop/cpp/lib/dpptools.git)
+get_filename_component(dpplib_ROOT ../../lib/dpplib ABSOLUTE)
 option(USE_EXTERNAL_DPPLIB "Do not use embedded version of Dpplib library" ON)
 
 #### Handle options (also set ${PROJECT_NAME}_<option> and <option>)

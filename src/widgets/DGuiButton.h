@@ -17,11 +17,12 @@ class DGuiButton : public DGuiWidget
         void AutoHeight(void) override;
         void Draw() override;
 
+        DText Text;
+
     private:
         void InitDefault(void);
         void FinalizeFromTree(DTools::DTree& WidgetTree);
 
-        DText Text;
         DText TempText;
 };
 

@@ -24,7 +24,7 @@ class DGuiToggleSlide : public DGuiWidget
         void FinalizeFromTree(DTools::DTree& WidgetTree);
 
         int ItemIndex;                  /// Current selected item index
-        DText Text;                         /// Text params
+        DText Text;                     /// Text params
 
     private:
         int DrawToggleSlider(Rectangle bounds, int *active);

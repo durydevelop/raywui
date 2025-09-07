@@ -72,6 +72,11 @@ class DGuiWidget
             {ALIGN_VCENTER, DJsonTree::ITEM_VCENTER }
         };
 
+        inline static const std::map<DSizeMode,std::string> SizeModes = {
+            {SIZE_AUTO,   DJsonTree::VALUE_AUTO   },
+            {SIZE_PARENT,  DJsonTree::VALUE_PARENT  }
+        };
+
     public:
         struct DAnchor{
             DAnchorSide AnchorToSide;
@@ -90,7 +95,7 @@ class DGuiWidget
         struct DProperties {
             // ** Apparence **
             /// Defaults are set in SetWidgetType()
-            unsigned int BackGroundColor;
+            unsigned int BackgroundColor;
             unsigned int BorderColor;
             int BorderWidth;
             bool BorderVisible; /// Used to override border visible in widgets that does not show it.
@@ -148,6 +153,8 @@ class DGuiWidget
         static std::string AnchorToName(DAnchorSide AnchorSide);
         static DAlign NameToAlign(const std::string& AlignName, DAlign Default);
         static std::string AlignToName(DAlign Align);
+        static DSizeMode NameToSize(const std::string& SizeName, DSizeMode Default);
+        static std::string SizeToName(DSizeMode Size);
         static unsigned int ColorStringToInt(std::string ColorString);
         static int GetTextWidth(std::string TextStr, Font TextFont, float FontSize, int TextSpacing);
 
@@ -204,7 +211,7 @@ class DGuiWidget
 
         void RayGuiDrawRectangle(Rectangle Bounds, int BorderWidth, Color BorderColor, Color Tint);
         void RayGuiDrawText(const char *TextStr, Rectangle TextBounds, int Alignment, Color Tint);
-        void RayGuiDrawText(std::string TextStr, Rectangle TextBounds, DTextAlign alignment, Color tint);
+        void RayGuiDrawText(std::string TextStr, Rectangle TextBounds, DTextAlign Align, Color Tint);
 
         std::string Name;
         Rectangle Bounds;
@@ -214,13 +221,13 @@ class DGuiWidget
         DProperties Properties;
 
     protected:
-        int DEFAULT_SIDE_SIZE=20;   //! Used for set docking position, will be overrided by widget subclass
-        int DEFAULT_WIDTH=50;       //! Used for set default witdh, will be overrided by widget subclass
-        int DEFAULT_HEIGHT=50;      //! Used for set default height, will be overrided by widget subclass
+        int DEFAULT_SIDE_SIZE=20;   //! Used for set docking position, will be overrided by widget subclass.
+        int DEFAULT_WIDTH=50;       //! Used for set default witdh, will be overrided by widget subclass.
+        int DEFAULT_HEIGHT=50;      //! Used for set default height, will be overrided by widget subclass.
 
         DWidgetType Type;
         DGuiWidget *Parent=nullptr;
-        DWidgetLabel LabelExt;
+        DWidgetLabel LabelExt;      //! Additional Label placed to the external bounds of the widget.
         DFlag Focus;
         DFlag Modify;
         

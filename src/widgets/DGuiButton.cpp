@@ -61,14 +61,14 @@ void DGuiButton::Update(void)
 
 void DGuiButton::AutoWidth(void)
 {
-    int TextOffset=Properties.BorderWidth+Text.Padding;
+    int TextOffset=Properties.BorderWidth+Text.GetPadding();
     Bounds.width=GetTextBounds(Text).width+(TextOffset*2);
 }
 
 void DGuiButton::AutoHeight(void)
 {
-    int TextOffset=Properties.BorderWidth+Text.Padding;
-    Bounds.height=Text.FontSize+(TextOffset*2);
+    int TextOffset=Properties.BorderWidth+Text.GetPadding();
+    Bounds.height=Text.GetFontSize()+(TextOffset*2);
 }
 
 /**
@@ -84,7 +84,7 @@ void DGuiButton::Draw()
     UpdateCurrentTextStyle(Text);
 
     Rectangle AbsBounds=GetAbsBounds();
-    if (GuiButton(AbsBounds, Text.Text.c_str())) {
+    if (GuiButton(AbsBounds, Text.GetText().c_str())) {
         DWidgetEvent Event={DEventCode::BUTTON_PRESS, 0, nullptr};
         SendEvent(Event);
     }

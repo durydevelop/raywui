@@ -187,7 +187,7 @@ void DGuiContainer::UpdateLabelInt(void)
             // Add offset
             LabelInt.Label->SetHeight(LabelInt.Label->Bounds.height+LabelInt.OffsetY);
             // Align text to bottom
-            LabelInt.Label->Text.Align.Vert=DTextAlignV::TEXT_ALIGN_VBOTTOM;
+            LabelInt.Label->SetTextAlign({DTextAlignH::TEXT_ALIGN_HCENTER,DTextAlignV::TEXT_ALIGN_VBOTTOM});
             // Set position
             LabelInt.Label->Bounds.x=(Bounds.width-LabelInt.Label->Bounds.width)/2; // Center horizzontally
             LabelInt.Label->Bounds.y=Bounds.height-LabelInt.Label->Bounds.height;
@@ -198,7 +198,7 @@ void DGuiContainer::UpdateLabelInt(void)
             // Add offset
             LabelInt.Label->SetHeight(LabelInt.Label->Bounds.height+LabelInt.OffsetY);
             // Align text to top
-            LabelInt.Label->Text.Align.Vert=DTextAlignV::TEXT_ALIGN_VTOP;
+            LabelInt.Label->SetTextAlign({DTextAlignH::TEXT_ALIGN_HCENTER,DTextAlignV::TEXT_ALIGN_VTOP});
             // Set position
             LabelInt.Label->Bounds.x=(Bounds.width-LabelInt.Label->Bounds.width)/2; // Center horizzontally
             LabelInt.Label->Bounds.y=0;
@@ -209,7 +209,7 @@ void DGuiContainer::UpdateLabelInt(void)
             // Add offset
             LabelInt.Label->SetWidth(LabelInt.Label->Bounds.width+LabelInt.OffsetX);
             // Align text to left
-            LabelInt.Label->Text.Align.Horiz=DTextAlignH::TEXT_ALIGN_HLEFT;
+            LabelInt.Label->SetTextAlign({DTextAlignH::TEXT_ALIGN_HLEFT,DTextAlignV::TEXT_ALIGN_VCENTER});
             // Set position
             LabelInt.Label->Bounds.x=0;
             LabelInt.Label->Bounds.y=(Bounds.height-LabelInt.Label->Bounds.height)/2; // Center vertically
@@ -220,7 +220,7 @@ void DGuiContainer::UpdateLabelInt(void)
             // Add offset
             LabelInt.Label->SetWidth(LabelInt.Label->Bounds.width+LabelInt.OffsetX);
             // Align text to right
-            LabelInt.Label->Text.Align.Horiz=DTextAlignH::TEXT_ALIGN_HRIGHT;
+            LabelInt.Label->SetTextAlign({DTextAlignH::TEXT_ALIGN_HRIGHT,DTextAlignV::TEXT_ALIGN_VCENTER});
             // Set position
             LabelInt.Label->Bounds.x=Bounds.width;
             LabelInt.Label->Bounds.y=(Bounds.height-LabelInt.Label->Bounds.height)/2; // Center vertically

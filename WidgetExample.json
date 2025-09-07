@@ -1,0 +1,51 @@
+{
+  "Type": "BUTTON",
+  "Name": "MyButton",
+  "Text": "Clicca qui",
+  "FontSize": 16,
+  "TextColor": "#222222",
+  "TextSpacing": 1,
+  "TextPadding": 2,
+  "BorderColor": "#FF0000",
+  "BorderWidth": 2,
+  "BorderVisible": true,
+  "LineColor": "#00FF00",
+  "BackgroundColor": "#0000FF",
+  "TextAlignH": "Center",
+  "TextAlignV": "Center",
+  "Enabled": true,
+  "Visible": true,
+  "Bounds": {
+    "Left": 50,
+    "Top": 100,
+    "Width": 120,
+    "Height": 40
+  },
+  "Docking": {
+    "Side": "Left",
+    "Size": 40
+  },
+  "Anchor": {
+    "AnchorToSide": "RIGHT_OF",
+    "AlignToSide": "TOP",
+    "WidgetName": "AnotherWidget",
+    "AnchorOffset": 10
+  },
+  "ParentAlign": {
+    "Left": 20,
+    "Top": 30,
+    "Right": 10,
+    "Bottom": 5,
+    "HCenter": 0,
+    "VCenter": 0,
+    "Center": 0
+  },
+  "LabelExt": {
+    "Text": "Etichetta esterna",
+    "FontSize": 16,
+    "Side": "Right",
+    "Offset": 8,
+    "OffsetX": 8,
+    "OffsetY": 0
+  }
+}

@@ -51,7 +51,7 @@ void DGuiToggleSlide::FinalizeFromTree(DTools::DTree& WidgetTree)
     for (auto ItemName : ItemsNames) {
         TextItems.emplace_back(ItemName);
     }
-    Text.Text=DTools::DVector::JoinToStr(ItemsNames,"");
+    Text.SetText(DTools::DVector::JoinToStr(ItemsNames,""));
 
     Update();
 }
@@ -64,7 +64,7 @@ void DGuiToggleSlide::FinalizeFromTree(DTools::DTree& WidgetTree)
 void DGuiToggleSlide::AddItem(const std::string &ItemText)
 {
     TextItems.emplace_back(ItemText);
-    Text.Text=DTools::DVector::JoinToStr(TextItems,"");
+    Text.SetText(DTools::DVector::JoinToStr(TextItems,""));
 }
 
 /**
@@ -75,7 +75,7 @@ void DGuiToggleSlide::AddItem(const std::string &ItemText)
 void DGuiToggleSlide::SetItemIndex(int Index)
 {
     ItemIndex=Index < 0 ? 0 : Index;
-    Text.Text=DTools::DVector::JoinToStr(TextItems,"");
+    Text.SetText(DTools::DVector::JoinToStr(TextItems,""));
 }
 
 /**
@@ -177,7 +177,7 @@ int DGuiToggleSlide::DrawToggleSlider(Rectangle bounds, int *active)
 
     // Draw text in slider @todo: GetTextBounds()
     Rectangle textBounds = { 0 };
-    textBounds.width = (float) GetTextWidth(DTools::DVector::JoinToStr(TextItems," "),Text.TextFont,Text.FontSize,Text.Spacing);
+    textBounds.width = (float) GetTextWidth(DTools::DVector::JoinToStr(TextItems," "),Text.GetFont(),Text.GetFontSize(),Text.GetSpacing());
     textBounds.height = (float) Text.GetFontSize();
     textBounds.x = slider.x + slider.width/2 - textBounds.width/2;
     textBounds.y = bounds.y + bounds.height/2 - textBounds.height/2;

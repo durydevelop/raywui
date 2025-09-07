@@ -45,7 +45,7 @@ DGuiApp::~DGuiApp()
 
 bool DGuiApp::LoadCanvas(std::string CanvasFilename)
 {
-    DPreferences Json(CanvasFilename);
+    DPreferences Json(CanvasFilename,false);
     if (!Json.IsReady()) {
         Log::error(TAG,"Canvas json file not ready: %s", Json.GetLastStatus().c_str());
         return false;
@@ -174,7 +174,7 @@ bool DGuiApp::DeleteTimerEvent(std::string Name)
 void DGuiApp::ClearScreen(void)
 {
     if (CurrDynamic.Widget) {
-        ClearBackground(GetColor(CurrDynamic.Widget->Properties.BackGroundColor));
+        ClearBackground(GetColor(CurrDynamic.Widget->Properties.BackgroundColor));
         EndDrawing();
     }
     else {
@@ -333,7 +333,7 @@ DResult DGuiApp::Run(void)
         if (CurrDynamic.Widget) {
             // Draw current dynamic widget
             //DLog::debug("ActiveContainer=%s",ActiveContainer->Name.c_str());
-            ClearBackground(GetColor(CurrDynamic.Widget->Properties.BackGroundColor));
+            ClearBackground(GetColor(CurrDynamic.Widget->Properties.BackgroundColor));
             CurrDynamic.Widget->Draw();
         }
 
