@@ -54,11 +54,11 @@ else()
     # Use embedded one
     message_c(${BOLD_MAGENTA} "${BOLD_WHITE}${PROJECT_NAME}${BOLD_MAGENTA} use <${BOLD_CYAN}dpplib${BOLD_MAGENTA}> embedded")
     add_subdirectory(external/dpplib)
-    install(
-        DIRECTORY ${dpplib_SOURCE_DIR}/dpplib
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_TARGET_NAME}"
-        FILES_MATCHING PATTERN "*.h"
-    )
+    #install(
+    #    DIRECTORY ${dpplib_SOURCE_DIR}/dpplib
+    #    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_TARGET_NAME}"
+    #    FILES_MATCHING PATTERN "*.h"
+    #)
 endif()
 
 #get_target_property(dpplib_SOURCE_DIR dpplib SOURCE_DIR)
@@ -66,3 +66,5 @@ endif()
 
 #print_var(dpplib)
 #print_target_prop(dpplib)
+
+#set(${LIBRARY_TARGET_NAME}_INCLUDE_DIRS ${${LIBRARY_TARGET_NAME}_INCLUDE_DIRS} ${dpplib_INCLUDE_DIRECTORIES})

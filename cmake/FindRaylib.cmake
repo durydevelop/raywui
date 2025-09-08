@@ -21,6 +21,7 @@ function(get_package_from_git)
 endfunction()
 
 unset(BUILD_EXAMPLES CACHE)
+#cmake_policy(SET CMP0077 NEW) # for BUILD_SHARED_LIBS and BUILD_EXAMPLES in raylib
 if (USE_EXTERNAL_RAYLIB)
     # Do not use internal Raylib
     message_c(${BOLD_MAGENTA} "${BOLD_WHITE}${PROJECT_NAME}${BOLD_MAGENTA} is finding <${BOLD_CYAN}raylib${BOLD_MAGENTA}>")
@@ -53,13 +54,14 @@ else()
     # Use embedded one
     message_c(${BOLD_MAGENTA} "${BOLD_WHITE}${PROJECT_NAME}${BOLD_MAGENTA} use <${BOLD_CYAN}raylib${BOLD_MAGENTA}> embedded")
     add_subdirectory(external/raylib)
-    install(
-        DIRECTORY ${raylib_SOURCE_DIR}/raylib
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_TARGET_NAME}"
-        FILES_MATCHING PATTERN "*.h"
-    )
+    #install(
+    #    DIRECTORY ${raylib_SOURCE_DIR}/raylib
+    #    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_TARGET_NAME}"
+    #    FILES_MATCHING PATTERN "*.h"
+    #)
 endif()
 
 #print_var(raylib)
 #print_target_prop(raylib)
 #include_directories(${raylib_SOURCE_DIR})
+#set(${LIBRARY_TARGET_NAME}_INCLUDE_DIRS ${${LIBRARY_TARGET_NAME}_INCLUDE_DIRS} ${raylib_SOURCE_DIR})

@@ -20,6 +20,7 @@
 
 int main(int argc, char *argv[])
 {
+/*
     const std::vector<std::string> args(argv + 1, argv + argc);
     std::vector<std::string> layoutList;
 
@@ -48,4 +49,5 @@ int main(int argc, char *argv[])
     for (auto layoutName : layoutList) {
         
     }
+*/
 }

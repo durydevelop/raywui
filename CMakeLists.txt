@@ -3,6 +3,10 @@
 ######################################################################################################################
 cmake_minimum_required(VERSION 3.13)
 
+##set(PLATFORM Desktop CACHE STRING "Platform to build for")
+#set(PLATFORM Web CACHE STRING "Platform to build for")
+#set(PLATFORM DRM CACHE STRING "Platform to build for")
+
 #### WASM support
 # CMAKE_TOOLCHAIN_FILE must be set before project() otherwise it does not take effect
 if (${PLATFORM} MATCHES "Web" OR EMSCRIPTEN)
@@ -92,7 +96,7 @@ set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "No wayland" FORCE) # Set to OFF if failed
 # If none specified:
 # First:  Try to find it in system
 # Second: Load from default git repo (git@gitlab.com:durydevelop/cpp/lib/dpptools.git)
-get_filename_component(dpplib_ROOT ../../lib/dpplib ABSOLUTE)
+get_filename_component(dpplib_ROOT /home/fabio/Dev/cpp/lib/dpplib ABSOLUTE)
 option(USE_EXTERNAL_DPPLIB "Do not use embedded version of Dpplib library" ON)
 
 #### Handle options (also set ${PROJECT_NAME}_<option> and <option>)

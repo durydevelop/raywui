@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     }
 
     // Add container to app
-    App.AddContainer(container);
+    App.AddDynamic(container);
 
     // Start drawing loop which waits for ESC or app quit
     DResult res=App.Run();
