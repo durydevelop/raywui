@@ -53,7 +53,7 @@ if (USE_EXTERNAL_RAYLIB)
 else()
     # Use embedded one
     message_c(${BOLD_MAGENTA} "${BOLD_WHITE}${PROJECT_NAME}${BOLD_MAGENTA} use <${BOLD_CYAN}raylib${BOLD_MAGENTA}> embedded")
-    add_subdirectory(external/raylib)
+    add_subdirectory(src/external/raylib)
     #install(
     #    DIRECTORY ${raylib_SOURCE_DIR}/raylib
     #    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIBRARY_TARGET_NAME}"

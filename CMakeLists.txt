@@ -1,7 +1,7 @@
 ######################################################################################################################
 # This CMake project file is based on this guide https://github.com/robotology/how-to-export-cpp-library/tree/master #
 ######################################################################################################################
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.28)
 
 ##set(PLATFORM Desktop CACHE STRING "Platform to build for")
 #set(PLATFORM Web CACHE STRING "Platform to build for")
@@ -38,7 +38,7 @@ endif()
 
 #### Create project
 project(raywui
-    VERSION 0.2.5
+    VERSION 0.2.6
     LANGUAGES C CXX
 )
 
@@ -55,11 +55,21 @@ if(MSVC)
     set(CMAKE_DEBUG_POSTFIX "d")
 endif()
 
+#message("CMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_CXX_STANDARD 20)
+if (NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 20 CACHE STRING "Standard C++ to use")
+elseif (CMAKE_CXX_STANDARD LESS 17)
+    message(WARNING "This project supports al least C++17, current CMAKE_CXX_STANDARD is ${CMAKE_CXX_STANDARD} and will set to 20")
+    set(CMAKE_CXX_STANDARD 20 CACHE STRING "Standard C++ to use" FORCE)
+endif()
+
+#target_compile_features(... cxx_std_20)
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS yes)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 #### Cmake modules helper
 list (APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -67,6 +77,7 @@ list (REMOVE_DUPLICATES CMAKE_MODULE_PATH)
 include(DCMakeHelper)
 
 #### Default Options
+option(${PROJECT_NAME}_BUILD_SHARED_LIBS "Build shared libraries (.dll/.so) instead of static ones (.lib/.a)" OFF)
 if (PROJECT_IS_TOP_LEVEL)
     option(${PROJECT_NAME}_BUILD_EXAMPLES "Build examples" ON)
     option(${PROJECT_NAME}_INSTALL "Create install target" ON)
@@ -74,7 +85,9 @@ else()
     option(${PROJECT_NAME}_BUILD_EXAMPLES "Build examples" OFF)
     option(${PROJECT_NAME}_INSTALL "Create install target" OFF)
 endif()
+# Testing
 option(${PROJECT_NAME}_BUILD_TESTING "Build tests suite" OFF)
+
 ## USE_EXTERNAL_RAYLIB
 # If USE_EXTERNAL_RAYLIB is ON one of these variables can be specified:
 # Use custom git repo, i.e.:
@@ -160,35 +173,118 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
     endif()
 endif()
 
-#### Add target
-add_subdirectory(src)
-#target_include_directories(${PROJECT_NAME} PUBLIC ${EMSCRIPTEN_SYSROOT}/include)
+#### Sources
 
-#### Install stuff
+# Source library files
+set(${PROJECT_NAME}_SRC)
+set(${PROJECT_NAME}_HDR)
+# Include base dir
+set(${PROJECT_NAME}_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+## Add sources
+add_subdirectory(src/core)
+add_subdirectory(src/widgets)
+add_subdirectory(src/raygui)
+
+#### Dependencies
+#cmake_policy(SET CMP0077 NEW) # for BUILD_SHARED_LIBS and BUILD_EXAMPLES in raylib
+#find_package(Raylib REQUIRED)
+#set(${PROJECT_NAME}_INCLUDE_DIRS ${${PROJECT_NAME}_INCLUDE_DIRS} ${raylib_INCLUDE_DIRECTORIES})
+#set(raylib_VERBOSE 1)
+add_subdirectory(src/external/raylib)
+#print_var(raylib)
+
+#if (NOT TARGET dpplib)
+    find_package(Dpplib REQUIRED)
+    #set(${LIBRARY_TARGET_NAME}_INCLUDE_DIRS ${${LIBRARY_TARGET_NAME}_INCLUDE_DIRS} ${dpplib_INCLUDE_DIRECTORIES})
+#endif()
+
+#message("${PROJECT_NAME}_SRC=${${PROJECT_NAME}_SRC}")
+#message("${PROJECT_NAME}_INCLUDE_DIRS=${${PROJECT_NAME}_INCLUDE_DIRS}")
+
+#### Setup library target
+add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SRC})
+
+# Header pubblici
+target_sources(${PROJECT_NAME}
+    PUBLIC
+        FILE_SET HEADERS
+        BASE_DIRS src
+        FILES ${${PROJECT_NAME}_HDR}
+)
+
+# Alias per comodità
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+# Proprietà della libreria
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+)
+
+# Collego raywui a raylib
+target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+        raylib
+)
+
+# Percorsi include
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+        "$<BUILD_INTERFACE:${${PROJECT_NAME}_INCLUDE_DIRS}>"
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}>"
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/external/raylib/src>" # dove sta raylib.h
+)
+
+#### Installazione e export
 if (${PROJECT_NAME}_INSTALL)
-    # Enable RPATH support for installed binaries and libraries
-    include(AddInstallRPATHSupport)
-    add_install_rpath_support(
-        BIN_DIRS "${CMAKE_INSTALL_FULL_BINDIR}"
-        LIB_DIRS "${CMAKE_INSTALL_FULL_LIBDIR}"
-        INSTALL_NAME_DIR "${CMAKE_INSTALL_FULL_LIBDIR}"
-        USE_LINK_PATH
+
+    # Installa la libreria e headers
+    install(TARGETS ${PROJECT_NAME}
+        EXPORT ${PROJECT_NAME}-targets
+        LIBRARY       DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT shlib
+        ARCHIVE       DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib
+        RUNTIME       DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT bin
+        FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}"
     )
 
-    # Create and install CMake configuration files
-    include(InstallBasicPackageFiles)
-    install_basic_package_files(${PROJECT_NAME}
-        VERSION ${${PROJECT_NAME}_VERSION}
-        COMPATIBILITY AnyNewerVersion
-        VARS_PREFIX ${PROJECT_NAME}
-        NO_CHECK_REQUIRED_COMPONENTS_MACRO
+    # Esporta i target locali
+    install(EXPORT ${PROJECT_NAME}-targets
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+        FILE ${PROJECT_NAME}-targets.cmake
     )
-    # Add the uninstall target
+
+    # Genera ConfigVersion.cmake
+    include(CMakePackageConfigHelpers)
+    write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY AnyNewerVersion
+    )
+
+    # Config.cmake da template
+    configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+    )
+
+    # Installa i file di configurazione
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+    )
+
+    # Target uninstall
     include(AddUninstallTarget)
 endif()
 
 #### Integration tests
-if(BUILD_TESTING)
+if(${PROJECT_NAME}BUILD_TESTING)
+    set(USE_EXTERNAL_googletest ON)
+    find_package(GoogleTest)
     enable_testing()
     add_subdirectory(test)
 endif()
@@ -202,8 +298,8 @@ endif()
 if (PROJECT_IS_TOP_LEVEL)
     set(DOXYGEN_THEME_NAME example)
     set(DOXYGEN_LANGUAGE Italian)
-    #add_subdirectory(doxygen)
-    include(doxygen/Doxygen.cmake)
+    add_subdirectory(doxygen)
+#    include(doxygen/Doxygen.cmake)
 endif()
 
 ## C++ Pre-processor variables
@@ -229,54 +325,3 @@ else()
     message_c(${BOLD_CYAN} "WebSocket backend:        IXWebSocket")
     message_c(${BOLD_CYAN} "USE_EXTERNAL_IXWEBSOCKET: ${USE_EXTERNAL_IXWEBSOCKET}")
 endif()
-
-#[[
-## Setup Target (as SHARED)
-## Build shared libraries (.dll/.so) instead of static ones (.lib/.a)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
-add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
-if(MSVC)
-    # Workaround for some projects
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-endif()
-# Include dirs
-string(REPLACE ";" "$<SEMICOLON>" LSRC_DIRS "${SRC_DIRS}")
-target_include_directories(
-    ${PROJECT_NAME} PUBLIC
-    "$<BUILD_INTERFACE:${LSRC_DIRS}>"
-#    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/include>"
-)
-
-## External dependencies
-# Raylib
-message_c("Get Raylib...")
-set(BUILD_SHARED_LIBS ON)
-set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "No wayland" FORCE) # TODO: detect wayland_scanner error
-#set(raylib_VERBOSE 1)
-find_package(Raylib)
-target_link_libraries(raylib)
-
-# Dpplib
-message_c("Get Dpplib...")
-find_package(Dpplib)
-target_link_libraries(${PROJECT_NAME} PUBLIC dpplib)
-print_var(dpplib)
-message_c("SRC_DIRS=${SRC_DIRS}")
-message_c("SRC_FILES=${SRC_FILES}")
-
-## C++ Pre-processor variables
-# raywui_VERSION
-add_compile_definitions(${PROJECT_NAME}_VERSION="${PROJECT_VERSION}")
-# RAYWUI_VERSION
-string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
-add_compile_definitions(${PROJECT_NAME_UPPER}_VERSION="${PROJECT_VERSION}")
-
-## Print summary
-message_c(${BOLD_CYAN} "Summary:")
-message_c(${BOLD_CYAN} "Project name:   ${PROJECT_NAME} - Version: ${PROJECT_VERSION}")
-message_c(${BOLD_CYAN} "Build type:     ${CMAKE_BUILD_TYPE}")
-message_c(${BOLD_CYAN} "Build as:       SHARED LIB")
-message_c(${BOLD_CYAN} "WASM support:   ${${PROJECT_NAME}_EMSCRIPTEN}")
-message_c(${BOLD_CYAN} "Build examples: ${BUILD_EXAMPLES} TODO")
-message_c(${BOLD_CYAN} "Build tests:    ${BUILD_TESTS} TODO")
-]]#

@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+# Trova le dipendenze richieste
+find_dependency(Dpplib REQUIRED)
+find_dependency(Raylib REQUIRED)
+
+# Carica i target esportati della libreria raywui
+include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@-targets.cmake")
